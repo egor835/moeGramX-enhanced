@@ -1,36 +1,26 @@
 {
   "project_info": {
-    "project_number": "644911857796",
-    "project_id": "moex-8818b",
-    "storage_bucket": "moex-8818b.appspot.com"
+    "project_number": "1062437739429",
+    "project_id": "somethinggram",
+    "storage_bucket": "somethinggram.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:644911857796:android:e852cebfa7f40e06f382d1",
+        "mobilesdk_app_id": "1:1062437739429:android:72059e228e656c78c4a64c",
         "android_client_info": {
-          "package_name": "moe.kirao.mgx"
+          "package_name": "moe.cnuuyy.mgx"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "644911857796-60c7bu27n3rfltib8sd8bpkh3k4teh7v.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAmMh_eZQ7JED4gTYsdmhgiPa-vu5ja3uQ"
+          "current_key": "AIzaSyD1VQMZlAoWrTdToHnky7OM_a50qWUgrl8"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "644911857796-60c7bu27n3rfltib8sd8bpkh3k4teh7v.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }

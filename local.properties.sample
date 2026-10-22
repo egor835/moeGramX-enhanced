@@ -6,27 +6,11 @@
 # header note.
 # Path to Android SDK
 sdk.dir=
-
-## Path to the keystore file
-keystore.file=
-
-## Package name
-app.id=org.example.tgx
-
-## Project name
-app.name=TGX Example
-
-## Link to the app's website. If unavailable, link to the market page could be used.
-app.download_url=https://telegram.org/dlx
-
-## Obtain credentials to access Telegram API:
-# https://core.telegram.org/api/obtaining_api_id
 telegram.api_id=
 telegram.api_hash=
-
-## Obtain credentials to access YouTube API:
-# https://developers.google.com/youtube/android/player/register
-youtube.api_key=
-
-## Extension module to apply.
-tgx.extension=none
+org.gradle.workers.max=12
+keystore.file=/home/cunny/StudioProjects/keys/tgx-keystore.properties
+app.id=moe.cnuuyy.mgx
+app.name=moeGramX
+app.download_url=https://github.com/egor835/moeGramX-enhanced
+app.sources_url=https://github.com/egor835/moeGramX-enhanced

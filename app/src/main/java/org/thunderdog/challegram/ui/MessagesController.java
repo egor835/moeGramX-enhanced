@@ -5188,8 +5188,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
         b.append(Lang.getString(R.string.ForwardedFromX, m.getSourceName()));
         b.append(" ]");
       }
-      TdApi.FormattedText text = Td.textOrCaption(msg.content);
-      if (msg.content.getConstructor() != TdApi.MessageText.CONSTRUCTOR && msg.content.getConstructor() != TdApi.MessageAnimatedEmoji.CONSTRUCTOR) {
+      TdApi.FormattedText text = TD.textOrCaption(msg.content);
+      if (msg.content.getConstructor() != TdApi.MessageText.CONSTRUCTOR && msg.content.getConstructor() != TdApi.MessageRichMessage.CONSTRUCTOR && msg.content.getConstructor() != TdApi.MessageAnimatedEmoji.CONSTRUCTOR) {
         b.append("\n[");
         ContentPreview preview = ContentPreview.getChatListPreview(tdlib, msg.chatId, msg, true);
         b.append(preview.buildText(false));
@@ -5835,7 +5835,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         if (message == null) {
           message = selectedMessage.getNewestMessage();
         }
-        TdApi.FormattedText text = id == R.id.btn_copyTranslation ? selectedMessage.getTranslatedText() : Td.textOrCaption(message.content);
+        TdApi.FormattedText text = id == R.id.btn_copyTranslation ? selectedMessage.getTranslatedText() : TD.textOrCaption(message.content);
         if (text != null)
           UI.copyText(TD.toCopyText(text), R.string.CopiedText);
         return true;

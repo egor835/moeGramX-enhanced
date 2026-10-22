@@ -8471,6 +8471,29 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     openWithArgs(context, args);
   }
 
+  /**
+   * Opens media attached to a rich message.
+   */
+  public static void openFromRichMessage (TGMessage msg, List<MediaItem> items, int index) {
+    ViewController<?> context = msg.controller();
+    if (context.isStackLocked() || items.isEmpty()) {
+      return;
+    }
+    List<TdApi.File> files = new ArrayList<>(items.size());
+    for (MediaItem item : items) {
+      files.add(item.getTargetFile());
+    }
+    msg.tdlib().files().syncFiles(files, 500L);
+    MediaStack stack = new MediaStack(context.context(), context.tdlib());
+    stack.set(index, items);
+    Args args = new Args(context, MODE_MESSAGES, stack);
+    args.noLoadMore = true;
+    args.forceThumbs = true;
+    args.areOnlyScheduled = msg.isScheduled();
+    args.setTopicId(msg.messagesController().getMessageTopicId());
+    openWithArgs(context, args);
+  }
+
   public static MediaViewController openSecret (TGMessageMedia photo) {
     ViewController<?> context = photo.controller();
     MediaItem item = MediaItem.valueOf(context.context(), context.tdlib(), photo.getMessage());

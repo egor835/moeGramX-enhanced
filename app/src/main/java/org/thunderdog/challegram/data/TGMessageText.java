@@ -127,6 +127,34 @@ public class TGMessageText extends TGMessage {
     this(context, msg, new TdApi.MessageText(text, null, null), null);
   }
 
+  public TGMessageText (MessagesManager context, TdApi.Message msg, TdApi.MessageRichMessage richMessage) {
+    this(context, msg, new TdApi.MessageText(RichMessageText.toFormattedText(richMessage), null, null), null);
+    requestFullRichMessage(richMessage);
+  }
+
+  private static TdApi.FormattedText textOf (TdApi.MessageContent content) {
+    if (content != null && content.getConstructor() == TdApi.MessageRichMessage.CONSTRUCTOR) {
+      return RichMessageText.toFormattedText((TdApi.MessageRichMessage) content);
+    }
+    return Td.textOrCaption(content);
+  }
+
+  private boolean fullRichMessageRequested;
+
+  private void requestFullRichMessage (TdApi.MessageRichMessage richMessage) {
+    if (richMessage.message == null || richMessage.message.isFull || fullRichMessageRequested || isSponsoredMessage() || msg.sendingState != null) {
+      return;
+    }
+    fullRichMessageRequested = true;
+    final long chatId = msg.chatId, messageId = msg.id;
+    tdlib.send(new TdApi.GetFullRichMessage(chatId, messageId), (fullMessage, error) -> {
+      if (fullMessage != null && fullMessage.isFull) {
+        // Full message may contain media, so it is processed as a regular content update
+        manager.onMessageContentChanged(chatId, messageId, new TdApi.MessageRichMessage(fullMessage));
+      }
+    });
+  }
+
   public TdApi.File getTargetFile () {
     return linkPreview != null ? linkPreview.getTargetFile() : null;
   }
@@ -413,6 +441,11 @@ public class TGMessageText extends TGMessage {
 
   @Override
   protected boolean isSupportedMessageContent (TdApi.Message message, TdApi.MessageContent messageContent) {
+    if (messageContent.getConstructor() == TdApi.MessageRichMessage.CONSTRUCTOR &&
+      !RichMessageText.collectMedia(((TdApi.MessageRichMessage) messageContent).message).isEmpty()) {
+      // Rich messages with media are displayed by TGMessageMedia
+      return false;
+    }
     final @EmojiMessageContentType int contentType = getEmojiMessageContentType(messageContent);
     if (messageContent.getConstructor() == TdApi.MessageText.CONSTRUCTOR || messageContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR) {
       return contentType == EmojiMessageContentType.NOT_EMOJI;
@@ -424,7 +457,7 @@ public class TGMessageText extends TGMessage {
   protected boolean onMessageContentChanged (TdApi.Message message, TdApi.MessageContent oldContent, TdApi.MessageContent newContent, boolean isBottomMessage) {
     TdApi.MessageText oldMessageText = Td.isText(oldContent) ? (TdApi.MessageText) oldContent : null;
     TdApi.MessageText newMessageText = Td.isText(newContent) ? (TdApi.MessageText) newContent : null;
-    if (!Td.equalsTo(Td.textOrCaption(oldContent), Td.textOrCaption(newContent)) ||
+    if (!Td.equalsTo(textOf(oldContent), textOf(newContent)) ||
         !Td.equalsTo(oldMessageText != null ? oldMessageText.linkPreview : null,
                      newMessageText != null ? newMessageText.linkPreview : null) ||
         !Td.equalsTo(oldMessageText != null ? oldMessageText.linkPreviewOptions : null,
@@ -439,7 +472,10 @@ public class TGMessageText extends TGMessage {
   @Override
   protected boolean updateMessageContent (TdApi.Message message, TdApi.MessageContent newContent, boolean isBottomMessage) {
     this.msg.content = newContent;
-    TdApi.MessageText newText = Td.isText(newContent) ? (TdApi.MessageText) newContent : new TdApi.MessageText(Td.textOrCaption(newContent), null, null);
+    TdApi.MessageText newText = Td.isText(newContent) ? (TdApi.MessageText) newContent : new TdApi.MessageText(textOf(newContent), null, null);
+    if (newContent.getConstructor() == TdApi.MessageRichMessage.CONSTRUCTOR) {
+      requestFullRichMessage((TdApi.MessageRichMessage) newContent);
+    }
     this.currentMessageText = newText;
     if (!isBeingEdited()) {
       boolean textChanged = setText(newText.text, false);

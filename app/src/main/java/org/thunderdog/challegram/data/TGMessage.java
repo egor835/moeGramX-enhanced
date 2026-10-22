@@ -8284,6 +8284,14 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageVenue.CONSTRUCTOR: {
           return new TGMessageLocation(context, msg, ((TdApi.MessageVenue) content).venue);
         }
+        case TdApi.MessageRichMessage.CONSTRUCTOR: {
+          TdApi.MessageRichMessage richMessage = (TdApi.MessageRichMessage) content;
+          List<TdApi.MessageContent> media = RichMessageText.collectMedia(richMessage.message);
+          if (!media.isEmpty()) {
+            return new TGMessageMedia(context, msg, richMessage, media);
+          }
+          return new TGMessageText(context, msg, richMessage);
+        }
         case TdApi.MessageContact.CONSTRUCTOR: {
           return new TGMessageContact(context, msg, (TdApi.MessageContact) content);
         }
@@ -8466,7 +8474,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           return new TGMessageGiveaway(context, msg, (TdApi.MessageGiveaway) content);
         }
         // unsupported
-        case TdApi.MessageRichMessage.CONSTRUCTOR:
         case TdApi.MessageInvoice.CONSTRUCTOR:
         case TdApi.MessagePassportDataSent.CONSTRUCTOR:
         case TdApi.MessageStory.CONSTRUCTOR:
@@ -9886,7 +9893,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         final TdApi.FormattedText sep = new TdApi.FormattedText(" ", new TdApi.TextEntity[0]);
         TdApi.FormattedText result = new TdApi.FormattedText("", new TdApi.TextEntity[0]);
         for (TdApi.Message msg : combinedMessages) {
-          final TdApi.FormattedText textPart = msg.content != null ? Td.textOrCaption(msg.content) : null;
+          final TdApi.FormattedText textPart = msg.content != null ? TD.textOrCaption(msg.content) : null;
           if (!Td.isEmpty(textPart)) {
             if (!Td.isEmpty(result)) {
               result = Td.concat(result, sep);
@@ -9897,7 +9904,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         return !Td.isEmpty(result) ? result : null;
       }
     }
-    return msg.content != null ? Td.textOrCaption(msg.content) : null;
+    return msg.content != null ? TD.textOrCaption(msg.content) : null;
   }
 
 

@@ -33,6 +33,7 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.mediaview.MediaViewController;
+import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
@@ -47,6 +48,7 @@ import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.util.text.TextWrapper;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.MathUtils;
@@ -119,6 +121,92 @@ public class TGMessageMedia extends TGMessage {
     }
     mediaWrapper.setViewProvider(currentViews);
     init(mediaWrapper, caption);
+  }
+
+  /**
+   * Rich message (e.g. Markdown post from a bot) with photos, videos or animations.
+   * All media is displayed as an album, and the rest of the message as its caption.
+   */
+  protected TGMessageMedia (MessagesManager context, TdApi.Message msg, @NonNull TdApi.MessageRichMessage richMessage, @NonNull List<TdApi.MessageContent> media) {
+    super(context, msg);
+    this.richMedia = media;
+    List<MediaWrapper> wrappers = new ArrayList<>(media.size());
+    for (TdApi.MessageContent content : media) {
+      MediaWrapper mediaWrapper = createMediaWrapper(msg.chatId, msg.id, content);
+      final int index = wrappers.size();
+      mediaWrapper.setOnClickListener((view, wrapper) -> {
+        openRichMedia(index);
+        return true;
+      });
+      wrappers.add(mediaWrapper);
+    }
+    init(wrappers.get(0), captionOf(msg.content));
+    for (int i = 1; i < wrappers.size(); i++) {
+      mosaicWrapper.addItem(wrappers.get(i), true);
+    }
+    requestFullRichMessage(richMessage);
+  }
+
+  private @Nullable List<TdApi.MessageContent> richMedia;
+
+  private static TdApi.FormattedText captionOf (TdApi.MessageContent content) {
+    if (content != null && content.getConstructor() == TdApi.MessageRichMessage.CONSTRUCTOR) {
+      return RichMessageText.toFormattedText(((TdApi.MessageRichMessage) content).message, true);
+    }
+    return Td.textOrCaption(content);
+  }
+
+  private void openRichMedia (int index) {
+    if (richMedia == null) {
+      return;
+    }
+    List<MediaItem> items = new ArrayList<>(richMedia.size());
+    int selectedIndex = 0;
+    for (int i = 0; i < richMedia.size(); i++) {
+      TdApi.MessageContent content = richMedia.get(i);
+      MediaItem item;
+      switch (content.getConstructor()) {
+        case TdApi.MessagePhoto.CONSTRUCTOR:
+          item = MediaItem.valueOf(context(), tdlib, ((TdApi.MessagePhoto) content).photo, null);
+          break;
+        case TdApi.MessageVideo.CONSTRUCTOR: {
+          TdApi.MessageVideo video = (TdApi.MessageVideo) content;
+          item = MediaItem.valueOf(context(), tdlib, video.video, video.alternativeVideos, video.cover, null);
+          break;
+        }
+        case TdApi.MessageAnimation.CONSTRUCTOR:
+          item = MediaItem.valueOf(context(), tdlib, ((TdApi.MessageAnimation) content).animation, null);
+          break;
+        default:
+          item = null;
+          break;
+      }
+      if (item != null) {
+        if (i == index) {
+          selectedIndex = items.size();
+        }
+        items.add(item);
+      }
+    }
+    if (!items.isEmpty()) {
+      MediaViewController.openFromRichMessage(this, items, selectedIndex);
+    }
+  }
+
+  private boolean fullRichMessageRequested;
+
+  private void requestFullRichMessage (TdApi.MessageRichMessage richMessage) {
+    if (richMessage.message == null || richMessage.message.isFull || fullRichMessageRequested || msg.sendingState != null) {
+      return;
+    }
+    fullRichMessageRequested = true;
+    final long chatId = msg.chatId, messageId = msg.id;
+    tdlib.send(new TdApi.GetFullRichMessage(chatId, messageId), (fullMessage, error) -> {
+      if (fullMessage != null && fullMessage.isFull) {
+        // Message is rebuilt the same way as after content update
+        manager.onMessageContentChanged(chatId, messageId, new TdApi.MessageRichMessage(fullMessage));
+      }
+    });
   }
 
   private MediaWrapper createMediaWrapper (TdApi.Message message) {
@@ -263,7 +351,7 @@ public class TGMessageMedia extends TGMessage {
           if (caption != null) {
             hasEditedText = true;
           } else {
-            caption = Td.textOrCaption(captionMessage.content);
+            caption = captionOf(captionMessage.content);
           }
           captionMessageId = captionMessage.id;
         }
@@ -272,7 +360,7 @@ public class TGMessageMedia extends TGMessage {
         if (caption != null) {
           hasEditedText = true;
         } else {
-          caption = Td.textOrCaption(msg.content);
+          caption = captionOf(msg.content);
         }
         captionMessageId = msg.id;
       }

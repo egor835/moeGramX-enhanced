@@ -3761,13 +3761,24 @@ public class TD {
     return false;
   }
 
+  /**
+   * Same as {@link Td#textOrCaption(TdApi.MessageContent)}, but also supports rich messages.
+   */
+  @Nullable
+  public static TdApi.FormattedText textOrCaption (@Nullable TdApi.MessageContent content) {
+    if (content != null && content.getConstructor() == TdApi.MessageRichMessage.CONSTRUCTOR) {
+      return RichMessageText.toFormattedText((TdApi.MessageRichMessage) content);
+    }
+    return Td.textOrCaption(content);
+  }
+
   public static String getTextFromMessage (TdApi.MessageContent content) {
-    TdApi.FormattedText formattedText = Td.textOrCaption(content);
+    TdApi.FormattedText formattedText = textOrCaption(content);
     return formattedText != null ? formattedText.text : null;
   }
 
   public static String getTextFromMessageSpoilerless (TdApi.MessageContent content) {
-    TdApi.FormattedText formattedText = Td.textOrCaption(content);
+    TdApi.FormattedText formattedText = textOrCaption(content);
     return formattedText != null ? TD.toCharSequence(formattedText, TextEntityOption.NONE, false).toString() : null;
   }
 
@@ -3830,7 +3841,7 @@ public class TD {
   }
 
   public static boolean canCopyText (TdApi.Message msg) {
-    TdApi.FormattedText text = msg != null ? Td.textOrCaption(msg.content) : null;
+    TdApi.FormattedText text = msg != null ? textOrCaption(msg.content) : null;
     return !Td.isEmpty(Td.trim(text));
   }
 

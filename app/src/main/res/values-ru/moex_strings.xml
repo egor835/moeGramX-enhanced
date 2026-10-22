@@ -103,4 +103,9 @@
   <string name="PaidReactionSend">Отправить ⭐ %1$s</string>
   <string name="PaidReactionAnonymous">Аноним</string>
   <string name="PaidReactionYouAnonymous">Вы (анонимно)</string>
+  <string name="ForumTopicsEmpty">Топиков пока нет</string>
+  <string name="ForumTopicNoMessages">Сообщений пока нет</string>
+  <string name="ForumViewAsMessages">Показать как сообщения</string>
+  <string name="ForumViewAsTopics">Показать как топики</string>
+  <string name="ForumOpenProfile">Информация о группе</string>
 </resources>

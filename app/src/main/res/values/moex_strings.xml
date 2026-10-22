@@ -127,4 +127,9 @@
   <string name="PaidReactionSend">Send ⭐ %1$s</string>
   <string name="PaidReactionAnonymous">Anonymous</string>
   <string name="PaidReactionYouAnonymous">You (anonymous)</string>
+  <string name="ForumTopicsEmpty">No topics yet</string>
+  <string name="ForumTopicNoMessages">No messages yet</string>
+  <string name="ForumViewAsMessages">View as messages</string>
+  <string name="ForumViewAsTopics">View as topics</string>
+  <string name="ForumOpenProfile">Group info</string>
 </resources>

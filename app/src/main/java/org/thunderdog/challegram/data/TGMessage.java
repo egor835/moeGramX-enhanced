@@ -790,7 +790,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     boolean isChannel = isChannel();
 
     TdApi.Message topMessage = top.getMessage();
-    if (top.headerDisabled() || top.isSponsoredMessage() != isSponsoredMessage() || (flags & FLAG_SHOW_BADGE) != 0 || !tdlib.isSameSender(topMessage, msg) || !TD.isSameSource(topMessage, msg, forceForwardOrImportInfo()) || topMessage.viaBotUserId != msg.viaBotUserId || !StringUtils.equalsOrBothEmpty(topMessage.authorSignature, msg.authorSignature) || mergeDisabled() || (useBubbles ? top.isOutgoingBubble() != isOutgoingBubble() : top.getMessage().mediaAlbumId != msg.mediaAlbumId || msg.mediaAlbumId != 0)) {
+    if (top.headerDisabled() || top.isSponsoredMessage() != isSponsoredMessage() || (flags & FLAG_SHOW_BADGE) != 0 || !tdlib.isSameSender(topMessage, msg) || !TD.isSameSource(topMessage, msg, forceForwardOrImportInfo()) || topMessage.viaBotUserId != msg.viaBotUserId || !StringUtils.equalsOrBothEmpty(topMessage.authorSignature, msg.authorSignature) || mergeDisabled() || (needForumTopicLabel() && !Td.equalsTo(topMessage.topicId, msg.topicId)) || (useBubbles ? top.isOutgoingBubble() != isOutgoingBubble() : top.getMessage().mediaAlbumId != msg.mediaAlbumId || msg.mediaAlbumId != 0)) {
       setHeaderEnabled(!headerDisabled());
       top.setIsBottom(true);
       return false;
@@ -1537,6 +1537,14 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   private boolean needName (boolean allowVia) {
+    if (needNameImpl(allowVia)) {
+      return true;
+    }
+    // Forum viewed as a single chat: topic label is shown in place of the name even for outgoing messages
+    return needForumTopicLabel() && useBubble() && !separateReplyFromBubble();
+  }
+
+  private boolean needNameImpl (boolean allowVia) {
     if (!useBubbles() ||
       (useBubble() && ((msg.viaBotUserId != 0 && !useForward() && allowVia) ||
       ((flags & FLAG_SELF_CHAT) != 0 && !isOutgoing())))) {
@@ -3229,6 +3237,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   private boolean onNameClick (View view, Text text, TextPart part, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+    if (part.getEntity() != null && part.getEntity().getTag() instanceof TdlibForumTopicManager.Key) {
+      TdlibForumTopicManager.Key key = (TdlibForumTopicManager.Key) part.getEntity().getTag();
+      tdlib.ui().openForumTopic(controller(), key.chatId, key.forumTopicId);
+      return true;
+    }
     if (part.getEntity() != null && part.getEntity().getTag() instanceof Long) {
       manager.controller().setInputInlineBot(msg.viaBotUserId, viaBotUsername);
       return true;
@@ -3301,11 +3314,33 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       if (hideName) {
         return null;
       }
-      SpannableStringBuilder b = new SpannableStringBuilder(authorName);
-      b.setSpan(new TextEntityCustom(controller(), tdlib, authorName, 0, authorName.length(), TextEntityCustom.FLAG_CLICKABLE, openParameters()), 0, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-      text = b;
-      allActive = true;
-      allBold = available;
+      final boolean needTopicLabel = !isForward && needForumTopicLabel();
+      final String topicLabel = needTopicLabel ? forumTopicLabel() : null;
+      if (needTopicLabel && !needNameImpl(false)) {
+        // Only topic name is displayed (e.g. for outgoing messages)
+        if (topicLabel == null) {
+          return null;
+        }
+        SpannableStringBuilder b = new SpannableStringBuilder(topicLabel);
+        b.setSpan(new TextEntityCustom(controller(), tdlib, topicLabel, 0, topicLabel.length(), TextEntityCustom.FLAG_CLICKABLE, openParameters()).setTag(forumTopicKey), 0, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        text = b;
+        allActive = true;
+      } else if (topicLabel != null) {
+        SpannableStringBuilder b = new SpannableStringBuilder(authorName);
+        b.setSpan(new TextEntityCustom(controller(), tdlib, authorName, 0, authorName.length(), TextEntityCustom.FLAG_CLICKABLE | (available ? TextEntityCustom.FLAG_BOLD : 0), openParameters()), 0, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        b.append(" › ");
+        int topicStart = b.length();
+        b.append(topicLabel);
+        b.setSpan(new TextEntityCustom(controller(), tdlib, topicLabel, topicStart, b.length(), TextEntityCustom.FLAG_CLICKABLE, openParameters()).setTag(forumTopicKey), topicStart, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        text = b;
+        allActive = true;
+      } else {
+        SpannableStringBuilder b = new SpannableStringBuilder(authorName);
+        b.setSpan(new TextEntityCustom(controller(), tdlib, authorName, 0, authorName.length(), TextEntityCustom.FLAG_CLICKABLE, openParameters()), 0, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        text = b;
+        allActive = true;
+        allBold = available;
+      }
     } else if (textRes == R.string.PsaFromXViaBot || textRes == R.string.message_nameViaBot) { // author via bot
       text = Lang.getString(textRes, (target, argStart, argEnd, argIndex, needFakeBold) -> new TextEntityCustom(controller(), tdlib, target.toString(), argStart, argEnd, TextEntityCustom.FLAG_CLICKABLE | (argIndex == 1 || available ? TextEntityCustom.FLAG_BOLD : 0), openParameters()).setTag(argIndex == 1 ? viaBotUserId : null), authorName, viaBotUsername);
     } else if (textRes == R.string.PsaFromX) { // author
@@ -8249,6 +8284,14 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           }
           return new TGMessageText(context, msg, nonNull((TdApi.MessageText) content), null);
         }
+        case TdApi.MessageRichMessage.CONSTRUCTOR: {
+          TdApi.MessageRichMessage richMessage = (TdApi.MessageRichMessage) content;
+          List<TdApi.MessageContent> media = RichMessageText.collectMedia(richMessage.message);
+          if (!media.isEmpty()) {
+            return new TGMessageMedia(context, msg, richMessage, media);
+          }
+          return new TGMessageText(context, msg, richMessage);
+        }
         case TdApi.MessageCall.CONSTRUCTOR: {
           return new TGMessageCall(context, msg, nonNull(((TdApi.MessageCall) content)));
         }
@@ -8289,14 +8332,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         }
         case TdApi.MessageVenue.CONSTRUCTOR: {
           return new TGMessageLocation(context, msg, ((TdApi.MessageVenue) content).venue);
-        }
-        case TdApi.MessageRichMessage.CONSTRUCTOR: {
-          TdApi.MessageRichMessage richMessage = (TdApi.MessageRichMessage) content;
-          List<TdApi.MessageContent> media = RichMessageText.collectMedia(richMessage.message);
-          if (!media.isEmpty()) {
-            return new TGMessageMedia(context, msg, richMessage, media);
-          }
-          return new TGMessageText(context, msg, richMessage);
         }
         case TdApi.MessageContact.CONSTRUCTOR: {
           return new TGMessageContact(context, msg, (TdApi.MessageContact) content);
@@ -10067,11 +10102,43 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       }
     }
     onTopicInfoUpdated();
+    if (needForumTopicLabel()) {
+      runOnUiThreadOptional(() -> {
+        rebuildLayout();
+        requestLayout();
+        invalidate();
+      });
+    }
   }
 
   @AnyThread
   protected void onTopicInfoUpdated () {
     // override
+  }
+
+  /**
+   * @return true, if the message is displayed in a forum viewed as a single chat, so its topic has to be shown
+   */
+  private boolean needForumTopicLabel () {
+    if (forumTopicKey == null || isSponsoredMessage() || isEventLog()) {
+      return false;
+    }
+    MessagesController controller = manager.controller();
+    return controller != null && controller.getMessageTopicId() == null && tdlib.isForum(msg.chatId);
+  }
+
+  @Nullable
+  private String forumTopicLabel () {
+    synchronized (forumTopicKey) {
+      if (topicInfo != null) {
+        return topicInfo.name;
+      }
+    }
+    // Starts observing topic, layout is rebuilt once topic info is received
+    withTopicInfo(ignored -> { });
+    synchronized (forumTopicKey) {
+      return topicInfo != null ? topicInfo.name : null;
+    }
   }
 
   @Override

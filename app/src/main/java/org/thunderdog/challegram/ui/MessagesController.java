@@ -578,9 +578,42 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
+  @Nullable
+  private TdApi.MessageTopicForum getForumTopicId () {
+    if (messageThread == null && messageTopicId != null && messageTopicId.getConstructor() == TdApi.MessageTopicForum.CONSTRUCTOR) {
+      return (TdApi.MessageTopicForum) messageTopicId;
+    }
+    return null;
+  }
+
+  private void updateForumTopicHeader (boolean allowRequest) {
+    TdApi.MessageTopicForum forumTopicId = getForumTopicId();
+    if (forumTopicId == null || headerCell == null || chat == null) {
+      return;
+    }
+    TdApi.ForumTopic forumTopic = tdlib.topics().findTopic(chat.id, forumTopicId.forumTopicId);
+    if (forumTopic != null) {
+      headerCell.setTitle(forumTopic.info.name);
+    } else if (allowRequest) {
+      final long chatId = chat.id;
+      tdlib.send(new TdApi.GetForumTopic(chatId, forumTopicId.forumTopicId), (topic, error) -> {
+        if (topic != null) {
+          tdlib.topics().cacheTopic(topic);
+          runOnUiThreadOptional(() -> {
+            if (chat != null && chat.id == chatId) {
+              updateForumTopicHeader(false);
+            }
+          });
+        }
+      });
+    }
+  }
+
   private void updateForcedSubtitle () {
     if (messageThread != null) {
       updateMessageThreadSubtitle();
+    } else if (getForumTopicId() != null && chat != null && !areScheduled) {
+      headerCell.setForcedSubtitle(tdlib.chatTitle(chat));
     } else if (areScheduled) {
       headerCell.setForcedSubtitle(Lang.lowercase(Lang.getString(isSelfChat() ? R.string.Reminders : R.string.ScheduledMessages)));
     } else {
@@ -1885,6 +1918,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Nullable
   public TdApi.DraftMessage getDraftMessage () {
+    TdApi.MessageTopicForum forumTopicId = getForumTopicId();
+    if (forumTopicId != null && chat != null) {
+      TdApi.ForumTopic forumTopic = tdlib.topics().findTopic(chat.id, forumTopicId.forumTopicId);
+      return forumTopic != null ? forumTopic.draftMessage : null;
+    }
     return messageThread != null ? messageThread.getDraft() : chat != null ? chat.draftMessage : null;
   }
 
@@ -2293,6 +2331,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       deleteThread();
     } else if (id == R.id.btn_viewScheduled) {
       viewScheduledMessages(false);
+    } else if (id == R.id.btn_viewAsTopics) {
+      tdlib.send(new TdApi.ToggleChatViewAsTopics(chat.id, true), tdlib.typedOkHandler());
+      tdlib.ui().openForumTopics(this, chat, getArgumentsStrict().chatList, true);
     } else if (id == R.id.btn_sendScreenshotNotification) {
       UI.showToast("Sent screenshot notification", Toast.LENGTH_SHORT);
       tdlib.onScreenshotTaken((int) (System.currentTimeMillis() / 1000l));
@@ -2843,6 +2884,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
     TdApi.Chat headerChat = messageThread != null ? tdlib.chatSync(messageThread.getContextChatId()) : null;
     headerCell.setChat(tdlib, headerChat != null ? headerChat : chat, messageThread);
+    updateForumTopicHeader(true);
 
     if (inPreviewMode) {
       switch (previewMode) {
@@ -4521,6 +4563,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (!manager.isTotallyEmpty() && (Config.USE_SECRET_SEARCH || !isSecretChat()) && !messagesHidden) {
       ids.append(R.id.btn_search);
       strings.append(R.string.Search);
+    }
+
+    if (messageTopicId == null && !areScheduled && tdlib.isForum(chat.id)) {
+      ids.append(R.id.btn_viewAsTopics);
+      strings.append(R.string.ForumViewAsTopics);
     }
 
     if ((!tdlib.isChannel(chat.id) || (status != null && !TD.isLeft(status))) && !tdlib.isSelfChat(chat.id)) {
@@ -11011,7 +11058,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Override
   public void onChatDraftMessageChanged (final long chatId, final @Nullable TdApi.DraftMessage draftMessage) {
     runOnUiThreadOptional(() -> {
-      if (getChatId() == chatId && inputView != null && !inputView.textChangedSinceChatOpened() && !isSecretChat() && messageThread == null) {
+      if (getChatId() == chatId && inputView != null && !inputView.textChangedSinceChatOpened() && !isSecretChat() && messageThread == null && getForumTopicId() == null) {
         // Applying server chat draft changes only if text wasn't changed while chat was open
         updateDraftMessage(chatId, draftMessage);
       }
@@ -11424,6 +11471,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         if (messageThread != null) {
           updateMessageThreadSubtitle();
         }
+        updateForumTopicHeader(false);
       }
     }
   }

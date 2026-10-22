@@ -94,6 +94,15 @@ public abstract class TdlibDataManager<Key, Value extends TdApi.Object, Result e
     }
   }
 
+  /**
+   * Puts already known value to the cache, e.g. received as a part of a list.
+   */
+  public final void put (Key key, @NonNull Value value) {
+    synchronized (dataLock) {
+      entries.put(key, newEntry(key, value, null));
+    }
+  }
+
   public interface Replacer<Value extends TdApi.Object> {
     @Nullable
     Value replace (@Nullable Value oldValue, @Nullable TdApi.Error oldError);

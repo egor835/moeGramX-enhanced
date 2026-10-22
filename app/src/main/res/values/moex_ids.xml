@@ -83,4 +83,11 @@
   <item name="btn_setPersonalChannel" type="id" />
   <item name="btn_toggleEdgeAnimSide" type="id" />
   <item name="btn_profileChannel" type="id" />
+  <item name="controller_forumTopics" type="id" />
+  <item name="menu_forumTopics" type="id" />
+  <item name="menu_btn_viewAsMessages" type="id" />
+  <item name="btn_viewAsMessages" type="id" />
+  <item name="btn_viewAsTopics" type="id" />
+  <item name="btn_openChatProfile" type="id" />
+  <item name="btn_forumTopic" type="id" />
 </resources>

@@ -220,7 +220,7 @@ public class MessagesLoader implements Client.ResultHandler {
 
   @Nullable
   public TdApi.MessageTopic getMessageTopicId () {
-    return messageThread != null ? messageThread.getMessageTopicId() : null;
+    return messageThread != null ? messageThread.getMessageTopicId() : topicId;
   }
 
   @Nullable
@@ -231,6 +231,17 @@ public class MessagesLoader implements Client.ResultHandler {
   @Nullable
   public ThreadInfo getMessageThread () {
     return messageThread;
+  }
+
+  /**
+   * @return Cached information about the currently opened forum topic, if any
+   */
+  @Nullable
+  public TdApi.ForumTopic getForumTopic () {
+    if (messageThread == null && chat != null && topicId != null && topicId.getConstructor() == TdApi.MessageTopicForum.CONSTRUCTOR) {
+      return tdlib.topics().findTopic(chat.id, ((TdApi.MessageTopicForum) topicId).forumTopicId);
+    }
+    return null;
   }
 
   private static final int MERGE_MODE_NONE = 0;
@@ -1151,6 +1162,10 @@ public class MessagesLoader implements Client.ResultHandler {
             loadingLocal = false;
             Log.ensureReturnType(TdApi.GetMessageThreadHistory.class, TdApi.Messages.class);
             function = new TdApi.GetMessageThreadHistory(sourceChatId, messageThread.getOldestMessageId(), (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit);
+          } else if (topicId != null && topicId.getConstructor() == TdApi.MessageTopicForum.CONSTRUCTOR) {
+            loadingLocal = false;
+            Log.ensureReturnType(TdApi.GetForumTopicHistory.class, TdApi.Messages.class);
+            function = new TdApi.GetForumTopicHistory(sourceChatId, ((TdApi.MessageTopicForum) topicId).forumTopicId, (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit);
           } else {
             Log.ensureReturnType(TdApi.GetChatHistory.class, TdApi.Messages.class);
             function = new TdApi.GetChatHistory(sourceChatId, (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit, loadingLocal);
@@ -1318,11 +1333,17 @@ public class MessagesLoader implements Client.ResultHandler {
     final long chatId, lastReadOutboxMessageId, lastReadInboxMessageId;
     final boolean hasUnreadMessages;
     final LongSparseArray<TdApi.ChatAdministrator> chatAdmins = manager.getChatAdmins();
+    final TdApi.ForumTopic forumTopic = getForumTopic();
     if (messageThread != null) {
       chatId = messageThread.getChatId();
       lastReadOutboxMessageId = messageThread.getLastReadOutboxMessageId();
       lastReadInboxMessageId = messageThread.getLastReadInboxMessageId();
       hasUnreadMessages = messageThread.hasUnreadMessages(chat);
+    } else if (chat != null && forumTopic != null) {
+      chatId = chat.id;
+      lastReadOutboxMessageId = forumTopic.lastReadOutboxMessageId;
+      lastReadInboxMessageId = forumTopic.lastReadInboxMessageId;
+      hasUnreadMessages = forumTopic.unreadCount > 0;
     } else if (chat != null) {
       chatId = chat.id;
       lastReadOutboxMessageId = chat.lastReadOutboxMessageId;
@@ -1610,7 +1631,7 @@ public class MessagesLoader implements Client.ResultHandler {
         }
 
         if (messages.length > 0) {
-          long lastMessageId = messageThread != null ? messageThread.getLastMessageId() : chat.lastMessage != null ? chat.lastMessage.id : 0;
+          long lastMessageId = messageThread != null ? messageThread.getLastMessageId() : getLastMessageId();
           if (lastMessageId != 0 && lastMessageId == messages[0].id) {
             UI.post(manager::onBottomEndChecked);
           }
@@ -1793,6 +1814,19 @@ public class MessagesLoader implements Client.ResultHandler {
     return isEndReached(getStartBottom());
   }
 
+  private long getLastMessageId () {
+    TdApi.ForumTopic forumTopic = getForumTopic();
+    if (forumTopic != null) {
+      // Topic info may be outdated, the chat's last message is always the newest one
+      long topicLastMessageId = forumTopic.lastMessage != null ? forumTopic.lastMessage.id : 0;
+      if (chat.lastMessage != null && Td.matchesTopic(chat.lastMessage.topicId, topicId)) {
+        topicLastMessageId = Math.max(topicLastMessageId, chat.lastMessage.id);
+      }
+      return topicLastMessageId;
+    }
+    return chat != null && chat.lastMessage != null ? chat.lastMessage.id : 0;
+  }
+
   private boolean isEndReached (MessageId messageId) {
     if (specialMode == SPECIAL_MODE_RESTRICTED)
       return true;
@@ -1805,7 +1839,8 @@ public class MessagesLoader implements Client.ResultHandler {
             return true;
           }
         } else if (chat != null) {
-          if (chat.lastMessage != null && messageId.getMessageId() >= chat.lastMessage.id) {
+          long lastMessageId = getLastMessageId();
+          if (lastMessageId != 0 && messageId.getMessageId() >= lastMessageId) {
             return true;
           }
         }

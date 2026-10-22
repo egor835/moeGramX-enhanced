@@ -105,6 +105,7 @@ import org.thunderdog.challegram.ui.EditRightsController;
 import org.thunderdog.challegram.ui.EditUsernameController;
 import org.thunderdog.challegram.ui.InstantViewController;
 import org.thunderdog.challegram.ui.ListItem;
+import org.thunderdog.challegram.ui.ForumTopicsController;
 import org.thunderdog.challegram.ui.MainController;
 import org.thunderdog.challegram.ui.MapController;
 import org.thunderdog.challegram.ui.MapControllerFactory;
@@ -1747,6 +1748,74 @@ public class TdlibUi extends Handler {
   private static final int CHAT_OPTION_SCHEDULED_MESSAGES = 1 << 6;
   private static final int CHAT_OPTION_OPEN_PROFILE_IF_DUPLICATE = 1 << 7;
   private static final int CHAT_OPTION_OPEN_DIRECT_MESSAGES_CHAT = 1 << 8;
+
+  // Forum topics
+
+  public boolean shouldOpenForumTopics (@Nullable TdApi.Chat chat) {
+    return chat != null && chat.viewAsTopics && tdlib.isForum(chat.id);
+  }
+
+  public void openForumTopics (TdlibDelegate context, TdApi.Chat chat, @Nullable TdApi.ChatList chatList, boolean keepStack) {
+    NavigationController navigation = context.context().navigation();
+    if (navigation == null || context.context().isNavigationBusy()) {
+      return;
+    }
+    ForumTopicsController controller = new ForumTopicsController(context.context(), tdlib);
+    controller.setArguments(new ForumTopicsController.Args(chatList, chat));
+    if (navigation.isEmpty()) {
+      navigation.initController(controller);
+      MainController c = new MainController(context.context(), context.tdlib());
+      c.getValue();
+      navigation.getStack().insert(c, 0);
+    } else if (navigation.getStackSize() > 1 && !keepStack) {
+      navigation.setControllerAnimated(controller, true, true);
+    } else {
+      navigation.navigateTo(controller);
+    }
+  }
+
+  public void openForumTopic (TdlibDelegate context, long chatId, int forumTopicId) {
+    TdApi.ForumTopic cachedTopic = tdlib.topics().findTopic(chatId, forumTopicId);
+    if (cachedTopic != null) {
+      openForumTopic(context, tdlib.chatStrict(chatId), null, cachedTopic);
+      return;
+    }
+    tdlib.send(new TdApi.GetForumTopic(chatId, forumTopicId), (topic, error) -> {
+      if (topic != null) {
+        tdlib.topics().cacheTopic(topic);
+        post(() -> openForumTopic(context, tdlib.chatStrict(chatId), null, topic));
+      } else {
+        UI.showError(error);
+      }
+    });
+  }
+
+  public void openForumTopic (TdlibDelegate context, TdApi.Chat chat, @Nullable TdApi.ChatList chatList, TdApi.ForumTopic topic) {
+    NavigationController navigation = context.context().navigation();
+    if (navigation == null || context.context().isNavigationBusy()) {
+      return;
+    }
+    TdApi.MessageTopicForum topicId = new TdApi.MessageTopicForum(topic.info.forumTopicId);
+    tdlib.topics().cacheTopic(topic);
+
+    MessageId highlightMessageId = null;
+    int highlightMode = MessagesManager.HIGHLIGHT_MODE_NONE;
+    Settings.SavedMessageId savedPosition = Settings.instance().getScrollMessageId(tdlib.id(), chat.id, topicId);
+    boolean canGoUnread = topic.unreadCount > 0 && topic.lastReadInboxMessageId != 0 &&
+      topic.lastMessage != null && topic.lastMessage.id > topic.lastReadInboxMessageId && !topic.lastMessage.isOutgoing;
+    boolean hasSavedPosition = savedPosition != null && savedPosition.id.getMessageId() != 0;
+    if (canGoUnread && (!hasSavedPosition || savedPosition.readFully)) {
+      highlightMode = MessagesManager.HIGHLIGHT_MODE_UNREAD;
+      highlightMessageId = new MessageId(chat.id, topic.lastReadInboxMessageId);
+    } else if (hasSavedPosition) {
+      highlightMode = MessagesManager.HIGHLIGHT_MODE_POSITION_RESTORE;
+      highlightMessageId = savedPosition.id;
+    }
+
+    MessagesController c = new MessagesController(context.context(), tdlib);
+    c.setArguments(new MessagesController.Arguments(chatList, chat, null, topicId, highlightMessageId, highlightMode, null));
+    navigation.navigateTo(c);
+  }
 
   public static class ChatOpenParameters {
     public int options;

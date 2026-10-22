@@ -115,6 +115,13 @@ class TdlibForumTopicManager(
     }
   }
 
+  fun cacheTopic (topic: ForumTopic) {
+    put(Key(topic.info.chatId, topic.info.forumTopicId), topic)
+  }
+
+  fun findTopic (chatId: Long, forumTopicId: Int): ForumTopic? =
+    find(Key(chatId, forumTopicId))?.value
+
   private val observers = ReferenceMap<Key, Observer>(true)
 
   fun findAndObserve(key: Key, observer: Observer): Entry? {

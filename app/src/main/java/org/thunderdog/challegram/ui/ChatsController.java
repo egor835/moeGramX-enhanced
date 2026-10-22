@@ -2142,6 +2142,10 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   }
 
   private void openChat (TdApi.Chat chat) {
+    if (pickerDelegate == null && tdlib.ui().shouldOpenForumTopics(chat)) {
+      tdlib.ui().openForumTopics(this, chat, chatList(), chatList().getConstructor() != TdApi.ChatListMain.CONSTRUCTOR);
+      return;
+    }
     int highlightMode;
     Object shareItem = pickerDelegate != null ? pickerDelegate.getShareItem() : null;
     TdlibUi.ChatOpenParameters params;

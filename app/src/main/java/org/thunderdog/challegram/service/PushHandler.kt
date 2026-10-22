@@ -30,7 +30,7 @@ class PushHandler : PushManager {
   }
 
   override fun log(format: String, vararg args: Any) =
-    TDLib.Tag.notifications(format, args)
+    TDLib.Tag.notifications(format, *args)
 
   override fun error(message: String, error: Throwable?) {
     TDLib.Tag.notifications("$message: ${Log.toString(error)}")

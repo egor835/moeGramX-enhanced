@@ -25,6 +25,8 @@ huawei-hms = "6.13.0.301"
 shortcutbadger = "1.1.22"
 relinker = "1.4.5"
 konfetti = "2.0.5"
+unifiedpush-connector = "3.3.5"
+tink-android = "1.23.0"
 transcoder = "ba8f098c94"
 sunrise-sunset-calculator = "1.2"
 subsampling-scale-image-view = "3.10.0"
@@ -263,6 +265,8 @@ okhttp-latest = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp-
 shortcutbadger = { module = "me.leolin:ShortcutBadger", version.ref = "shortcutbadger" }
 relinker = { module = "com.getkeepsafe.relinker:relinker", version.ref = "relinker" }
 konfetti = { module = "nl.dionsegijn:konfetti-xml", version.ref = "konfetti" }
+unifiedpush-connector = { module = "org.unifiedpush.android:connector", version.ref = "unifiedpush-connector" }
+tink-android = { module = "com.google.crypto.tink:tink-android", version.ref = "tink-android" }
 transcoder = { module = "com.github.natario1:Transcoder", version.ref = "transcoder" }
 sunriseSunsetCalculator = { module = "com.luckycatlabs:SunriseSunsetCalculator", version.ref = "sunrise-sunset-calculator" }
 subsamplingScaleImageView = { module = "com.davemorrissey.labs:subsampling-scale-image-view-androidx", version.ref = "subsampling-scale-image-view" }

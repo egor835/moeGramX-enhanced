@@ -1,5 +1,6 @@
 package moe.kirao.mgx.ui;
 
+import android.app.Application;
 import android.content.Context;
 import android.view.View;
 import android.widget.Toast;
@@ -10,6 +11,7 @@ import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
+import org.thunderdog.challegram.push.PushServiceSelector;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
@@ -113,6 +115,8 @@ public class SettingsMoexController extends RecyclerViewController<SettingsMoexC
       showAutoPauseTypeOptions();
     } else if (viewId == R.id.btn_headerText) {
       showHeaderTextOptions();
+    } else if (viewId == R.id.btn_pushService) {
+      showPushServiceOptions();
     } else if (viewId == R.id.btn_disableReactions) {
       MoexConfig.instance().toggleDisableReactions();
       adapter.updateValuedSettingById(viewId);
@@ -203,6 +207,51 @@ public class SettingsMoexController extends RecyclerViewController<SettingsMoexC
 
       adapter.updateValuedSettingById(R.id.btn_hideMessagePanelButtons);
     }));
+  }
+
+  private void showPushServiceOptions () {
+    int pushService = MoexConfig.instance().getPushService();
+    showSettings(new SettingsWrapBuilder(R.id.btn_pushService).setRawItems(new ListItem[] {
+      new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_pushServiceAuto, 0, R.string.PushServiceAuto, R.id.btn_pushService, pushService == MoexConfig.PUSH_SERVICE_AUTO),
+      new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_pushServiceFirebase, 0, R.string.PushServiceFirebase, R.id.btn_pushService, pushService == MoexConfig.PUSH_SERVICE_FIREBASE),
+      new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_pushServiceUnifiedPush, 0, R.string.PushServiceUnifiedPush, R.id.btn_pushService, pushService == MoexConfig.PUSH_SERVICE_UNIFIEDPUSH),
+    }).setAllowResize(false).addHeaderItem(Lang.getMarkdownString(this, R.string.PushServiceInfo)).setIntDelegate((id, result) -> {
+      int selectedId = result.get(R.id.btn_pushService);
+      int newPushService;
+      if (selectedId == R.id.btn_pushServiceFirebase) {
+        if (!PushServiceSelector.isFirebaseAvailable(context)) {
+          UI.showToast(R.string.PushServiceNoGooglePlayServices, Toast.LENGTH_LONG);
+          return;
+        }
+        newPushService = MoexConfig.PUSH_SERVICE_FIREBASE;
+      } else if (selectedId == R.id.btn_pushServiceUnifiedPush) {
+        if (!PushServiceSelector.isUnifiedPushAvailable(context)) {
+          UI.showToast(R.string.PushServiceNoDistributor, Toast.LENGTH_LONG);
+          return;
+        }
+        newPushService = MoexConfig.PUSH_SERVICE_UNIFIEDPUSH;
+      } else {
+        newPushService = MoexConfig.PUSH_SERVICE_AUTO;
+      }
+      if (newPushService != MoexConfig.instance().getPushService()) {
+        MoexConfig.instance().setPushService(newPushService);
+        PushServiceSelector.onPushServiceChanged((Application) context.getApplicationContext());
+      }
+      adapter.updateValuedSettingById(R.id.btn_pushService);
+    }));
+  }
+
+  private static String pushServiceName (String retrieverName) {
+    switch (retrieverName) {
+      case "firebase":
+        return Lang.getString(R.string.PushServiceFirebase);
+      case "unifiedpush":
+        return Lang.getString(R.string.PushServiceUnifiedPush);
+      case "hms":
+        return "Huawei Push Kit";
+      default:
+        return retrieverName;
+    }
   }
 
   private void showHeaderTextOptions () {
@@ -297,6 +346,13 @@ public class SettingsMoexController extends RecyclerViewController<SettingsMoexC
           view.getToggler().setRadioEnabled(Settings.instance().isExperimentEnabled(Settings.EXPERIMENT_FLAG_SHOW_PEER_IDS), isUpdate);
         } else if (itemId == R.id.btn_hideMessagesBadge) {
           view.getToggler().setRadioEnabled(MoexConfig.hideMessagesBadge, isUpdate);
+        } else if (itemId == R.id.btn_pushService) {
+          String currentService = pushServiceName(PushServiceSelector.currentServiceName());
+          if (MoexConfig.instance().getPushService() == MoexConfig.PUSH_SERVICE_AUTO) {
+            view.setData(Lang.getString(R.string.PushServiceAutoValue, currentService));
+          } else {
+            view.setData(currentService);
+          }
         } else if (itemId == R.id.btn_changeSizeLimit) {
           int size = MoexConfig.instance().getSizeLimit();
           switch (size) {
@@ -431,6 +487,12 @@ public class SettingsMoexController extends RecyclerViewController<SettingsMoexC
         if (Config.EDGE_TO_EDGE_AVAILABLE) {
           items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.RightSwipeEdgeAnimationInfo));
         }
+
+        items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.PushNotificationsHeader));
+        items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_pushService, 0, R.string.PushService));
+        items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+        items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.PushServiceDescription));
 
         items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.ProfileOptions));
         items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));

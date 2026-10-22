@@ -14,6 +14,7 @@
  */
 package org.thunderdog.challegram.telegram;
 
+import android.app.Application;
 import android.content.Context;
 import android.os.Build;
 import android.os.Environment;
@@ -47,6 +48,7 @@ import org.thunderdog.challegram.core.WatchDogContext;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.player.AudioController;
 import org.thunderdog.challegram.player.TGPlayerController;
+import org.thunderdog.challegram.push.PushServiceSelector;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.AppBuildInfo;
@@ -1725,6 +1727,18 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     checkDeviceToken(null);
   }
 
+  /**
+   * Requests a new device token, e.g. after push service was changed.
+   */
+  public void refreshDeviceToken () {
+    synchronized (this) {
+      this.tokenState = TokenState.NONE;
+      this.tokenError = null;
+      this.tokenFullError = null;
+    }
+    checkDeviceToken();
+  }
+
   public void checkDeviceToken (@Nullable RunnableBool after) {
     checkDeviceToken(3, after);
   }
@@ -1757,6 +1771,13 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       @Override
       public void onTokenRetrievalError (@NotNull String errorKey, @org.jetbrains.annotations.Nullable Throwable e) {
         TDLib.Tag.notifications("Failed to retrieve push token", e);
+        if (PushServiceSelector.onTokenRetrievalFailed((Application) UI.getAppContext(), errorKey)) {
+          // Another push service will be used instead
+          if (after != null) {
+            after.runWithBool(false);
+          }
+          return;
+        }
         setTokenState(TokenState.ERROR, errorKey, e);
         if (after != null) {
           after.runWithBool(false);

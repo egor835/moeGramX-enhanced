@@ -132,4 +132,14 @@
   <string name="ForumViewAsMessages">View as messages</string>
   <string name="ForumViewAsTopics">View as topics</string>
   <string name="ForumOpenProfile">Group info</string>
+  <string name="PushNotificationsHeader">Push notifications</string>
+  <string name="PushService">Push service</string>
+  <string name="PushServiceAuto">Automatic</string>
+  <string name="PushServiceAutoValue">Automatic (%1$s)</string>
+  <string name="PushServiceFirebase">Firebase (Google)</string>
+  <string name="PushServiceUnifiedPush">UnifiedPush</string>
+  <string name="PushServiceInfo">**Firebase** requires Google Play Services.\n**UnifiedPush** works without Google through a distributor app, such as ntfy.</string>
+  <string name="PushServiceDescription">Automatic mode uses Firebase when Google Play Services are available, and UnifiedPush otherwise.</string>
+  <string name="PushServiceNoGooglePlayServices">Google Play Services are unavailable on this device</string>
+  <string name="PushServiceNoDistributor">No UnifiedPush distributor installed. Install ntfy or another distributor app.</string>
 </resources>

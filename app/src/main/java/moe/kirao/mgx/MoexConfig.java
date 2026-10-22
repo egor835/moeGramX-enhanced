@@ -57,6 +57,7 @@ public class MoexConfig {
   public static final String KEY_DISABLE_PROXY_ON_VPN = "disable_proxy_on_vpn";
   public static final String KEY_AUTO_PAUSE_MEDIA_TYPES = "auto_pause_media_types";
   public static final String KEY_AUTO_PAUSE_RESUME = "auto_pause_resume_system_playback";
+  public static final String KEY_PUSH_SERVICE = "push_service";
 
   public static final int START_WITH_FRONT = 0;
   public static final int START_WITH_REAR = 1;
@@ -67,6 +68,10 @@ public class MoexConfig {
   public static final int AUTO_PAUSE_MEDIA_VIDEO = 1 << 2;
   public static final int AUTO_PAUSE_MEDIA_ALL =
     AUTO_PAUSE_MEDIA_VOICE | AUTO_PAUSE_MEDIA_ROUND | AUTO_PAUSE_MEDIA_VIDEO;
+
+  public static final int PUSH_SERVICE_AUTO = 0;
+  public static final int PUSH_SERVICE_FIREBASE = 1;
+  public static final int PUSH_SERVICE_UNIFIEDPUSH = 2;
 
   public static final int SIZE_LIMIT_800 = 0;
   public static final int SIZE_LIMIT_1280 = 1;
@@ -279,6 +284,18 @@ public class MoexConfig {
 
   public void toggleHideMessagesBadge () {
     putBoolean(KEY_HIDE_MESSAGES_BADGE, hideMessagesBadge ^= true);
+  }
+
+  public int getPushService () {
+    return getInt(KEY_PUSH_SERVICE, PUSH_SERVICE_AUTO);
+  }
+
+  public void setPushService (int pushService) {
+    if (pushService == PUSH_SERVICE_AUTO) {
+      remove(KEY_PUSH_SERVICE);
+    } else {
+      putInt(KEY_PUSH_SERVICE, pushService);
+    }
   }
 
   public int getSizeLimit () {

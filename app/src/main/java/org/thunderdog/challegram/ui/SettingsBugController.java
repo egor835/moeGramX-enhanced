@@ -31,6 +31,7 @@ import org.drinkmore.Tracer;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.MainActivity;
+import org.thunderdog.challegram.push.UnifiedPushTokenRetriever;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.base.SettingView;
@@ -764,7 +765,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
           items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.Experiment_NoEdgeToEdgeInfo));
         }
 
-        if (TelegramXExtension.INSTANCE.isNotEmpty()) {
+        if (TelegramXExtension.INSTANCE.isNotEmpty() || UnifiedPushTokenRetriever.isDistributorAvailable(context)) {
           if (!items.isEmpty()) {
             items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
           }

@@ -1078,6 +1078,14 @@ dependencies {
   preMarshmallowImplementation(libs.relinker)
   // Konfetti: https://github.com/DanielMartinus/Konfetti/blob/main/README.md
   implementation(libs.konfetti)
+  // UnifiedPush: https://codeberg.org/UnifiedPush/android-connector
+  implementation(libs.unifiedpush.connector) {
+    // Java flavor of Tink conflicts with tink-android used by other dependencies
+    exclude(group = "com.google.crypto.tink", module = "tink")
+  }
+  // Tink: https://github.com/tink-crypto/tink-java/releases
+  // Same version as the one UnifiedPush connector is built against
+  implementation(libs.tink.android)
   // Transcoder: https://github.com/natario1/Transcoder/blob/master/docs/_about/changelog.md
   legacyImplementation(libs.transcoder)
   // https://github.com/mikereedell/sunrisesunsetlib-java

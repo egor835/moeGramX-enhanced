@@ -256,6 +256,13 @@ public class TdlibNotificationUtils {
     return deviceTokenRetriever.initialize(UI.getAppContext());
   }
 
+  /**
+   * Forgets currently used push service, so it is chosen again on the next request.
+   */
+  public static synchronized void resetDeviceTokenRetriever () {
+    deviceTokenRetriever = null;
+  }
+
   public static @NonNull DeviceTokenRetriever getDeviceTokenRetriever () {
     if (deviceTokenRetriever == null) {
       initialize();

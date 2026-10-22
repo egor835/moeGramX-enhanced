@@ -90,4 +90,7 @@
   <item name="btn_viewAsTopics" type="id" />
   <item name="btn_openChatProfile" type="id" />
   <item name="btn_forumTopic" type="id" />
+  <item name="btn_pushServiceAuto" type="id" />
+  <item name="btn_pushServiceFirebase" type="id" />
+  <item name="btn_pushServiceUnifiedPush" type="id" />
 </resources>

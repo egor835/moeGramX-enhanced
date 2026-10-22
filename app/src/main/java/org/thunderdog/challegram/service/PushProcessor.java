@@ -87,6 +87,15 @@ public class PushProcessor {
     }
   }
 
+  /**
+   * Handles a push without a payload (e.g. UnifiedPush / Simple Push) by synchronizing all accounts.
+   */
+  public void processSyncPush (long pushId, long receivedTime) {
+    Settings.instance().trackPushMessageReceived(receivedTime, System.currentTimeMillis(), 0);
+    TDLib.Tag.notifications(pushId, TdlibAccount.NO_ID, "Received push without payload, synchronizing all accounts");
+    TdlibManager.instanceForAccountId(TdlibAccount.NO_ID).runWithWakeLock(manager -> processPush(manager, pushId, null, TdlibAccount.NO_ID));
+  }
+
   private boolean hasActiveNetwork () {
     ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
     NetworkInfo netInfo;

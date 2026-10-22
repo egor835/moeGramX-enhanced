@@ -108,4 +108,14 @@
   <string name="ForumViewAsMessages">Показать как сообщения</string>
   <string name="ForumViewAsTopics">Показать как топики</string>
   <string name="ForumOpenProfile">Информация о группе</string>
+  <string name="PushNotificationsHeader">Push-уведомления</string>
+  <string name="PushService">Сервис push-уведомлений</string>
+  <string name="PushServiceAuto">Автоматически</string>
+  <string name="PushServiceAutoValue">Автоматически (%1$s)</string>
+  <string name="PushServiceFirebase">Firebase (Google)</string>
+  <string name="PushServiceUnifiedPush">UnifiedPush</string>
+  <string name="PushServiceInfo">**Firebase** требует Google Play Services.\n**UnifiedPush** работает без Google через приложение-дистрибьютор, например ntfy.</string>
+  <string name="PushServiceDescription">В автоматическом режиме используется Firebase, если есть Google Play Services, иначе UnifiedPush.</string>
+  <string name="PushServiceNoGooglePlayServices">На этом устройстве нет Google Play Services</string>
+  <string name="PushServiceNoDistributor">Не установлен дистрибьютор UnifiedPush. Установите ntfy или другое приложение-дистрибьютор.</string>
 </resources>

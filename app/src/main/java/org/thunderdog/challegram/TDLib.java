@@ -141,6 +141,10 @@ public final class TDLib {
       }
       prefix.append("]: ");
       logModule("notifications", prefix + message);
+      if (BuildConfig.DEBUG) {
+        // Push delivery is hard to debug without logs, mirror them to logcat in debug builds
+        android.util.Log.i("tgx-push", prefix + message);
+      }
     }
   }
 }

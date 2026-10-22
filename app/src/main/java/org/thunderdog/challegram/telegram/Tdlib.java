@@ -6676,7 +6676,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return true;
   }
 
-  void processPushOrSync (long pushId, String payload, @Nullable Runnable after) {
+  void processPushOrSync (long pushId, @Nullable String payload, @Nullable Runnable after) {
+    if (payload == null) {
+      // Push without payload (UnifiedPush), messages have to be fetched through the regular connection
+      TDLib.Tag.notifications(pushId, accountId, "Started processing push without payload, performing full sync, hasAfter:%b", after != null);
+      sync(pushId, after, true, true);
+      return;
+    }
     TDLib.Tag.notifications(pushId, accountId, "Started processing push notification, hasAfter:%b", after != null);
     incrementNotificationReferenceCount();
     send(new TdApi.ProcessPushNotification(payload), (ok, error) -> {
@@ -7301,14 +7307,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     sessionsInfo = null;
     animatedTgxEmoji.clear();
     cachedReactions.clear();
+    paidReaction = null;
+    ownedStarAmount = null;
     activeEmojiReactions = null;
     closeBirthdayUsers = null;
   }
 
   private void resetOptions () {
     options = new TdlibOptions();
-    paidReaction = null;
-    ownedStarAmount = null;
     if (!StringUtils.isEmpty(applicationConfigJson)) {
       TdApi.JsonValue value = JSON.parse(applicationConfigJson);
       if (value != null) {

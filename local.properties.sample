@@ -14,3 +14,4 @@ app.id=moe.cnuuyy.mgx
 app.name=moeGramX
 app.download_url=https://github.com/egor835/moeGramX-enhanced
 app.sources_url=https://github.com/egor835/moeGramX-enhanced
+tgx.extension=none

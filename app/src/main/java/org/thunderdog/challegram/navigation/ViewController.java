@@ -1205,6 +1205,13 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     return false;
   }
 
+  /**
+   * @return Bottom system inset (e.g. navigation bar) excluding keyboard
+   */
+  public final int getBottomInsetWithoutIme () {
+    return extraBottomInsetWithoutIme;
+  }
+
   protected void onBottomInsetChanged (int extraBottomInset, int extraBottomInsetWithoutIme, boolean isImeInset) {
     // override in children
   }

@@ -22,6 +22,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
@@ -138,7 +140,7 @@ public class PaidReactionPicker {
 
     LinearLayout content = new LinearLayout(context);
     content.setOrientation(LinearLayout.VERTICAL);
-    content.setPadding(horizontalPadding, Screen.dp(16f), horizontalPadding, Screen.dp(16f));
+    content.setPadding(horizontalPadding, Screen.dp(16f), horizontalPadding, Screen.dp(16f) + getNavigationBarInset());
     content.setBackgroundColor(Theme.fillingColor());
 
     // Title + balance
@@ -282,6 +284,19 @@ public class PaidReactionPicker {
     popupView.addView(content, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
     popupView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
     return popupView;
+  }
+
+  /**
+   * Popup is attached to the activity root, so navigation bar must not overlap its bottom part.
+   */
+  private int getNavigationBarInset () {
+    int inset = owner.getBottomInsetWithoutIme();
+    View rootView = owner.getValue();
+    WindowInsetsCompat insets = rootView != null ? ViewCompat.getRootWindowInsets(rootView) : null;
+    if (insets != null) {
+      inset = Math.max(inset, insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom);
+    }
+    return inset;
   }
 
   private TdApi.PaidReactionType newReactionType () {

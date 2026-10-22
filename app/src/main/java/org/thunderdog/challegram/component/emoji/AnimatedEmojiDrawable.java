@@ -49,6 +49,10 @@ public class AnimatedEmojiDrawable extends Drawable implements Destroyable {
   }
 
   public void setSticker (TGStickerObj sticker, boolean isPlayOnce) {
+    if (sticker.isPaidReactionStar()) {
+      drawable = Drawables.get(R.drawable.baseline_paid_reaction_star_24).mutate();
+      return;
+    }
     if (sticker.isDefaultPremiumStar()) {
       drawable = Drawables.get(R.drawable.baseline_premium_star_28).mutate();
       return;

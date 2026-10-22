@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Telegram Stars paid reaction icon -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+  android:width="24dp"
+  android:height="24dp"
+  android:viewportWidth="24"
+  android:viewportHeight="24">
+  <path
+    android:fillColor="#FFFFA61C"
+    android:strokeColor="#FFF08A0C"
+    android:strokeWidth="1.6"
+    android:strokeLineJoin="round"
+    android:pathData="M12.00,16.90 L17.69,20.33 L16.18,13.86 L21.20,9.51 L14.59,8.95 L12.00,2.85 L9.41,8.95 L2.80,9.51 L7.82,13.86 L6.31,20.33Z" />
+  <path
+    android:fillColor="#FFFFD650"
+    android:strokeColor="#FFFFD650"
+    android:strokeWidth="1.2"
+    android:strokeLineJoin="round"
+    android:pathData="M12.00,14.55 L15.21,16.49 L14.36,12.83 L17.20,10.37 L13.46,10.06 L12.00,6.61 L10.54,10.06 L6.80,10.37 L9.64,12.83 L8.79,16.49Z" />
+</vector>

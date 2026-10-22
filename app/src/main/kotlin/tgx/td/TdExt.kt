@@ -353,4 +353,6 @@ fun Array<MessageWithProperties>?.toMessageIdsMap (): LongSparseArray<LongArray>
   return result
 }
 
-fun ReactionType?.isUnsupported (): Boolean = this?.constructor == ReactionTypePaid.CONSTRUCTOR
+// Paid reactions (Telegram Stars) are supported since moeGramX added their rendering
+@Suppress("UNUSED_PARAMETER")
+fun ReactionType?.isUnsupported (): Boolean = false

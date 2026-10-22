@@ -68,6 +68,7 @@ import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.helper.PaidReactions;
 import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
@@ -106,6 +107,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.FeatureToggles;
 import org.thunderdog.challegram.ui.MessagesController;
+import org.thunderdog.challegram.ui.PaidReactionPicker;
 import org.thunderdog.challegram.ui.TranslationControllerV2;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.EmojiStatusHelper;
@@ -382,6 +384,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
       @Override
       public void onLongClick (View v, TGReactions.MessageReactionEntry entry) {
+        if (PaidReactions.isPaid(entry.getReactionType())) {
+          openPaidReactionPicker();
+          return;
+        }
         loadAvailableReactions(() -> {
           loadAllMessageProperties(() -> {
             if (canGetAddedReactions()) {
@@ -9564,6 +9570,59 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   private void onSendError (@Nullable View v, @Nullable TGReactions.MessageReactionEntry entry, TdApi.Error error) {
     showReactionBubbleTooltip(v, entry, TD.toErrorString(error));
+  }
+
+  // Paid reactions
+
+  private TooltipOverlayView.TooltipInfo paidReactionTooltip;
+
+  public void onPaidReactionPendingChanged (long pendingStarCount) {
+    if (paidReactionTooltip != null) {
+      paidReactionTooltip.hide(true);
+      paidReactionTooltip = null;
+    }
+    View view = findCurrentView();
+    if (pendingStarCount <= 0 || view == null || isDestroyed()) {
+      return;
+    }
+    final long chatId = msg.chatId, messageId = getOldestMessage().id;
+    final String undoLink = "tg://moex/undo_paid_reaction";
+    String sent = Lang.getString(R.string.PaidReactionSent, Lang.formatNumber(pendingStarCount));
+    String undo = Lang.getString(R.string.PaidReactionUndo);
+    String text = sent + "  " + undo;
+    TdApi.FormattedText formattedText = new TdApi.FormattedText(text, new TdApi.TextEntity[] {
+      new TdApi.TextEntity(text.length() - undo.length(), undo.length(), new TdApi.TextEntityTypeTextUrl(undoLink))
+    });
+    TGReactions.MessageReactionEntry entry = messageReactions.getMessageReactionEntry(TD.makeReactionKey(new TdApi.ReactionTypePaid()));
+    TooltipOverlayView.TooltipBuilder builder = context().tooltipManager().builder(view);
+    if (entry != null) {
+      builder.locate(getReactionBubbleLocationProvider(entry));
+    }
+    paidReactionTooltip = builder
+      .click(new Text.ClickCallback() {
+        @Override
+        public boolean onUrlClick (View view, String link, boolean promptUser, @NonNull TdlibUi.UrlOpenParameters openParameters) {
+          if (undoLink.equals(link)) {
+            PaidReactions.undo(tdlib, chatId, messageId);
+            if (paidReactionTooltip != null) {
+              paidReactionTooltip.hide(false);
+              paidReactionTooltip = null;
+            }
+            return true;
+          }
+          return false;
+        }
+      })
+      .show(tdlib, formattedText)
+      .hideDelayed(PaidReactions.COMMIT_DELAY_MS, TimeUnit.MILLISECONDS);
+  }
+
+  public void openPaidReactionPicker () {
+    MessagesController controller = messagesController();
+    if (controller == null || controller.isDestroyed()) {
+      return;
+    }
+    new PaidReactionPicker(controller, this).show();
   }
 
   private void showReactionBubbleTooltip (View v, TGReactions.MessageReactionEntry entry, String text) {

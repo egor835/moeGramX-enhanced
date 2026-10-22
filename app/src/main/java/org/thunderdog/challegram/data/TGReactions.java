@@ -2,8 +2,10 @@ package org.thunderdog.challegram.data;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -13,7 +15,9 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MessageView;
+import org.thunderdog.challegram.helper.PaidReactions;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
@@ -26,6 +30,7 @@ import org.thunderdog.challegram.telegram.ReactionLoadListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
@@ -51,6 +56,7 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
+import me.vkryl.core.MathUtils;
 import me.vkryl.core.lambda.Destroyable;
 import tgx.td.Td;
 import tgx.td.TdExt;
@@ -115,6 +121,25 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
     return reactions;
   }
 
+  /**
+   * @return Reactions without the paid one, which can't be listed by senders
+   */
+  public static @Nullable TdApi.MessageReactions withoutPaid (@Nullable TdApi.MessageReactions reactions) {
+    if (reactions == null) {
+      return null;
+    }
+    List<TdApi.MessageReaction> list = new ArrayList<>(reactions.reactions.length);
+    for (TdApi.MessageReaction reaction : reactions.reactions) {
+      if (!PaidReactions.isPaid(reaction.type)) {
+        list.add(reaction);
+      }
+    }
+    if (list.size() == reactions.reactions.length) {
+      return reactions;
+    }
+    return new TdApi.MessageReactions(list.toArray(new TdApi.MessageReaction[0]), reactions.areTags, reactions.paidReactors, reactions.canGetAddedReactions);
+  }
+
   public void setReactions (@Nullable TdApi.MessageReactions reactions) {
     this.reactionsListEntry.clear();
     this.tdReactionsMap.clear();
@@ -129,7 +154,10 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
     for (TdApi.MessageReaction reaction : reactions.reactions) {
       String reactionKey = TD.makeReactionKey(reaction.type);
       tdReactionsMap.put(reactionKey, reaction);
-      totalCount += reaction.totalCount;
+      if (!PaidReactions.isPaid(reaction.type)) {
+        // Paid reaction count is a number of stars, not a number of senders
+        totalCount += reaction.totalCount;
+      }
       if (reaction.isChosen) {
         chosenReactions.add(reactionKey);
       }
@@ -601,6 +629,10 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
 
   public boolean toggleReaction (TdApi.ReactionType reactionType, boolean isBig, boolean updateRecentReactions, Client.ResultHandler handler) {
     TdApi.Message message = parent.getOldestMessage();
+    if (PaidReactions.isPaid(reactionType)) {
+      // Paid reactions can't be removed, every tap adds one more star
+      return PaidReactions.addStars(tdlib, parent.getChatId(), message.id, 1, null, false, parent::onPaidReactionPendingChanged);
+    }
     boolean hasReaction = !hasReaction(reactionType);
     if (hasReaction) {
       tdlib.client().send(new TdApi.AddMessageReaction(parent.getChatId(), message.id, reactionType, isBig, updateRecentReactions), handler);
@@ -941,7 +973,25 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
     private boolean isHidden;
     private boolean inAnimation;
 
+    private Drawable paidStarDrawable;
+
     private void drawReceiver (Canvas c, int l, int t, int r, int b, float alpha) {
+      if (reactionObj.isPaid()) {
+        if (paidStarDrawable == null) {
+          paidStarDrawable = Drawables.get(R.drawable.baseline_paid_reaction_star_24);
+        }
+        float size = Math.min(r - l, b - t);
+        float scale = size / paidStarDrawable.getMinimumWidth() * .78f;
+        int saveCount = Views.save(c);
+        c.scale(scale, scale, (l + r) / 2f, (t + b) / 2f);
+        Paint paint = Paints.getBitmapPaint();
+        int prevAlpha = paint.getAlpha();
+        paint.setAlpha((int) (255 * alpha));
+        Drawables.drawCentered(c, paidStarDrawable, (l + r) / 2f, (t + b) / 2f, paint);
+        paint.setAlpha(prevAlpha);
+        Views.restore(c, saveCount);
+        return;
+      }
       Receiver receiver = inAnimation ? centerAnimationReceiver : staticCenterAnimationReceiver;
       float scale = inAnimation ? animationScale : staticAnimationFile != null ? staticAnimationFileScale : staticImageFileScale;
       if (receiver != null) {
@@ -1070,8 +1120,17 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
 
     // ColorSet
 
+    private static final int PAID_REACTION_COLOR = 0xFFF5A00F;
+
+    private boolean usePaidReactionColors () {
+      return reactionObj.isPaid() && message != null && !(message.useBubbles() && (message.useStickerBubbleReactions() || message.useMediaBubbleReactions()));
+    }
+
     @Override
     public int defaultTextColor () {
+      if (usePaidReactionColors()) {
+        return PAID_REACTION_COLOR;
+      }
       if (!message.useBubbles()) {
         return counter.getColor(counter.getMuteFactor(), ColorId.fillingPositiveContent, ColorId.fillingActiveContent);
       } else if (message.useStickerBubbleReactions() || message.useMediaBubbleReactions()) {
@@ -1089,6 +1148,9 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
 
     @Override
     public int backgroundColor (boolean isPressed) {
+      if (usePaidReactionColors()) {
+        return ColorUtils.alphaColor(MathUtils.fromTo(.32f, .14f, counter.getMuteFactor()), PAID_REACTION_COLOR);
+      }
       if (!message.useBubbles()) {
         return counter.getColor(counter.getMuteFactor(), ColorId.fillingPositive, ColorId.fillingActive);
       } else if (message.useStickerBubbleReactions() || message.useMediaBubbleReactions()) {

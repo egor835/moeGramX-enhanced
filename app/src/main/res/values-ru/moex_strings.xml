@@ -90,4 +90,17 @@
   <string name="moex_birthdayBarSubtitle">День рождения сегодня</string>
   <string name="moex_birthdaysTodayTitle">%1$d дней рождения сегодня</string>
   <string name="RichMessageThinking">Размышления</string>
+  <string name="PaidReaction">Звёздная реакция</string>
+  <string name="PaidReactionSent">Отправлено ⭐ %1$s</string>
+  <string name="PaidReactionUndo">Отменить</string>
+  <string name="PaidReactionNotEnoughStars">Недостаточно звёзд: на балансе ⭐ %1$s. Звёзды можно купить в официальном приложении Telegram.</string>
+  <string name="PaidReactionNotEnoughStarsUnknown">Недостаточно звёзд на балансе. Звёзды можно купить в официальном приложении Telegram.</string>
+  <string name="PaidReactionLimitReached">За один раз можно отправить не больше ⭐ %1$s на одно сообщение.</string>
+  <string name="PaidReactionDescription">Выберите, сколько звёзд отправить, чтобы поддержать %1$s.</string>
+  <string name="PaidReactionBalance">Баланс: ⭐ %1$s</string>
+  <string name="PaidReactionTopSenders">Топ отправителей</string>
+  <string name="PaidReactionShowMe">Показывать меня в топе</string>
+  <string name="PaidReactionSend">Отправить ⭐ %1$s</string>
+  <string name="PaidReactionAnonymous">Аноним</string>
+  <string name="PaidReactionYouAnonymous">Вы (анонимно)</string>
 </resources>

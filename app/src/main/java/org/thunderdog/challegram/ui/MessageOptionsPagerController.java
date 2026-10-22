@@ -42,6 +42,7 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGReaction;
+import org.thunderdog.challegram.data.TGReactions;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.Menu;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -818,6 +819,11 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
   }
 
   private void onReactionClick (View v, TGReaction reaction, boolean isLongClick) {
+    if (isLongClick && reaction.isPaid()) {
+      hidePopupWindow(true);
+      state.message.openPaidReactionPicker();
+      return;
+    }
     if (isLongClick) {
       if (Config.DISABLE_ANONYMOUS_NON_OWNER_REACTIONS && tdlib.isAnonymousAdminNonCreator(state.message.getChatId())) {
         return;
@@ -1062,7 +1068,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       this.onReactionClickListener = onReactionClickListener;
       this.isPremium = message.tdlib().hasPremium();
 
-      this.messageReactions = message.getMessageReactions().getReactions();
+      this.messageReactions = TGReactions.withoutPaid(message.getMessageReactions().getReactions());
       this.chosenReactions = message.getMessageReactions().getChosen();
       this.availableReactions = message.getMessageAvailableReactions();
       this.needShowMessageViews = !(!message.canGetViewers() || message.isUnread() || message.noUnread());

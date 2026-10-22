@@ -114,4 +114,17 @@
   <string name="moex_birthdaysTodayTitle">%1$d birthdays today</string>
   <string name="ProfileChannel">Profile Channel</string>
   <string name="RichMessageThinking">Thinking</string>
+  <string name="PaidReaction">Star reaction</string>
+  <string name="PaidReactionSent">Sent ⭐ %1$s</string>
+  <string name="PaidReactionUndo">Undo</string>
+  <string name="PaidReactionNotEnoughStars">Not enough Stars: your balance is ⭐ %1$s. Stars can be purchased in the official Telegram app.</string>
+  <string name="PaidReactionNotEnoughStarsUnknown">Not enough Stars on your balance. Stars can be purchased in the official Telegram app.</string>
+  <string name="PaidReactionLimitReached">You can send up to ⭐ %1$s to a single message at once.</string>
+  <string name="PaidReactionDescription">Choose how many Stars you want to send to support %1$s.</string>
+  <string name="PaidReactionBalance">Balance: ⭐ %1$s</string>
+  <string name="PaidReactionTopSenders">Top senders</string>
+  <string name="PaidReactionShowMe">Show me in top senders</string>
+  <string name="PaidReactionSend">Send ⭐ %1$s</string>
+  <string name="PaidReactionAnonymous">Anonymous</string>
+  <string name="PaidReactionYouAnonymous">You (anonymous)</string>
 </resources>

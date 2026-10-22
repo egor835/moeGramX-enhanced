@@ -135,6 +135,7 @@ public class ReactionsOverlayView extends ViewGroup {
     private final GifReceiver gifReceiver;
     private GifFile animation;
     private @Nullable Drawable drawable;
+    private boolean drawableHasOwnColors;
     private float displayScale;
     private Runnable removeRunnable;
     private boolean useDefaultSprayAnimation;
@@ -178,6 +179,13 @@ public class ReactionsOverlayView extends ViewGroup {
     }
 
     public ReactionInfo setSticker (TGStickerObj sticker, boolean isPlayOnce) {
+      if (sticker.isPaidReactionStar()) {
+        displayScale = sticker.getDisplayScale();
+        drawableHasOwnColors = true;
+        drawable = Drawables.get(R.drawable.baseline_paid_reaction_star_24).mutate();
+        parentView.invalidate();
+        return this;
+      }
       if (sticker.isDefaultPremiumStar()) {
         displayScale = sticker.getDisplayScale();
         needThemedColorFilter = true;
@@ -339,7 +347,9 @@ public class ReactionsOverlayView extends ViewGroup {
       gifReceiver.draw(canvas);
       //canvas.drawRect(position, Paints.strokeBigPaint(Color.RED));
       if (drawable != null) {
-        drawable.setColorFilter(Paints.whitePorterDuffPaint().getColorFilter());
+        if (!drawableHasOwnColors) {
+          drawable.setColorFilter(Paints.whitePorterDuffPaint().getColorFilter());
+        }
         drawable.draw(canvas);
       }
       if (animatedEmojiEffect != null) {

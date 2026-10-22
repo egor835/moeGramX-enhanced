@@ -9,13 +9,17 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
+import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.tool.Drawables;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.text.TextMedia;
 
 import me.vkryl.core.lambda.RunnableData;
@@ -57,6 +61,25 @@ public class TGReaction {
     initialize();
   }
 
+  /**
+   * Telegram Stars paid reaction.
+   */
+  public TGReaction (@NonNull Tdlib tdlib) {
+    this.tdlib = tdlib;
+    this.type = new TdApi.ReactionTypePaid();
+    this.key = TD.makeReactionKey(type);
+    this.emojiReaction = null;
+    this.customReaction = null;
+
+    initialize();
+  }
+
+  public static final int PAID_REACTION_ID = 0x7a1d57a2;
+
+  public boolean isPaid () {
+    return type.getConstructor() == TdApi.ReactionTypePaid.CONSTRUCTOR;
+  }
+
   private void initialize () {
     _staticIconSicker = newStaticIconSicker();
     _activateAnimationSicker = newActivateAnimationSicker();
@@ -75,7 +98,7 @@ public class TGReaction {
   }
 
   public boolean needThemedColorFilter () {
-    return TD.needThemedColorFilter(customReaction);
+    return customReaction != null && TD.needThemedColorFilter(customReaction);
   }
 
   public boolean isPremium () {
@@ -87,6 +110,9 @@ public class TGReaction {
   }
 
   public String getTitle () {
+    if (isPaid()) {
+      return Lang.getString(R.string.PaidReaction);
+    }
     return emojiReaction != null ? emojiReaction.title : "";
   }
 
@@ -162,11 +188,16 @@ public class TGReaction {
   }
 
   public int getId () {
+    if (isPaid()) {
+      return PAID_REACTION_ID;
+    }
     return _staticIconSicker.getId();
   }
 
   private TGStickerObj newStaticIconSicker () {
-    if (emojiReaction != null) {
+    if (isPaid()) {
+      return TGStickerObj.makePaidReactionStar(tdlib).setDisplayScale(.5f);
+    } else if (emojiReaction != null) {
       return new TGStickerObj(tdlib, emojiReaction.staticIcon, emojiReaction.emoji, emojiReaction.staticIcon.fullType).setReactionType(type).setDisplayScale(.5f);
     } else {
       float displayScale = TextMedia.getScale(customReaction, 0) * .5f;
@@ -212,6 +243,7 @@ public class TGReaction {
     @Nullable private final ImageFile imageFile;
     private final float displayScale;
     @Nullable private ImageReceiver imageReceiver;
+    @Nullable private final Drawable paidStarDrawable;
 
     public ReactionDrawable (TGReaction reaction, int width, int height) {
       this.width = width;
@@ -221,6 +253,7 @@ public class TGReaction {
       TGStickerObj stickerObj = reaction.staticCenterAnimationSicker();
       imageFile = stickerObj.getImage();
       displayScale = stickerObj.getDisplayScale();
+      paidStarDrawable = reaction.isPaid() ? Drawables.get(R.drawable.baseline_paid_reaction_star_24) : null;
     }
 
     public void setComplexReceiver (ComplexReceiver complexReceiver) {
@@ -236,6 +269,14 @@ public class TGReaction {
 
     @Override
     public void draw (@NonNull Canvas c) {
+      if (paidStarDrawable != null) {
+        float scale = Math.min(width, height) / (float) paidStarDrawable.getMinimumWidth() * .85f;
+        int saveCount = Views.save(c);
+        c.scale(scale, scale, width / 2f, height / 2f);
+        Drawables.drawCentered(c, paidStarDrawable, width / 2f, height / 2f, null);
+        Views.restore(c, saveCount);
+        return;
+      }
       if (imageReceiver != null) {
         imageReceiver.drawScaled(c, displayScale);
       }

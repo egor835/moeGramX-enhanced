@@ -63,6 +63,7 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Sti
   private final FactorAnimator animator;
   private @Nullable TGStickerObj sticker;
   private @Nullable Drawable premiumStarDrawable;
+  private @Nullable Drawable paidReactionStarDrawable;
   private Path contour;
   private Tdlib tdlib;
   private int padding;
@@ -97,6 +98,7 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Sti
 
   public void setSticker (@Nullable TGStickerObj sticker) {
     this.sticker = sticker;
+    this.paidReactionStarDrawable = sticker != null && sticker.isPaidReactionStar() ? Drawables.get(R.drawable.baseline_paid_reaction_star_24) : null;
     this.isAnimation = sticker != null && sticker.isAnimated();
     float corners = MoexConfig.roundedStickers ? Screen.dp(Theme.getImageRadius()) : 0;
     resetStickerState();
@@ -258,7 +260,13 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Sti
       float scale = originalScale * (MIN_SCALE + (1f - MIN_SCALE) * (1f - factor));
       c.scale(scale, scale, cx, cy);
     }
-    if (premiumStarDrawable != null) {
+    if (paidReactionStarDrawable != null) {
+      float starScale = Math.min(imageReceiver.getWidth(), imageReceiver.getHeight()) / (float) paidReactionStarDrawable.getMinimumWidth();
+      final int starSaveCount = Views.save(c);
+      c.scale(starScale, starScale, cx, cy);
+      Drawables.drawCentered(c, paidReactionStarDrawable, cx, cy, null);
+      Views.restore(c, starSaveCount);
+    } else if (premiumStarDrawable != null) {
       Drawables.drawCentered(c, premiumStarDrawable, cx, cy, PorterDuffPaint.get(themedColorId));
     } else if (isAnimation) {
       if (gifReceiver.needPlaceholder()) {

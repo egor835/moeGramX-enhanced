@@ -474,6 +474,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   private Set<String> activeEmojiReactions;
   private TdApi.ReactionType defaultReactionType;
   private TdApi.PaidReactionType defaultPaidReactionType;
+  private @Nullable TdApi.StarAmount ownedStarAmount;
+  private TGReaction paidReaction;
   private final Map<String, TGReaction> cachedReactions = new HashMap<>();
 
   private int storyStealthModeActiveUntilDate, storyStealthModeCooldownUntilDate;
@@ -4394,6 +4396,15 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     return EmojiCodes.THUMBS_UP;
   }
 
+  /**
+   * @return Number of Telegram Stars owned by the current user, or -1 if unknown yet
+   */
+  public long ownedStarCount () {
+    synchronized (dataLock) {
+      return ownedStarAmount != null ? ownedStarAmount.starCount : -1;
+    }
+  }
+
   @Nullable
   public TdApi.PaidReactionType defaultPaidReaction () {
     synchronized (dataLock) {
@@ -4564,6 +4575,15 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       }
     }
     switch (reactionType.getConstructor()) {
+      case TdApi.ReactionTypePaid.CONSTRUCTOR: {
+        synchronized (dataLock) {
+          if (paidReaction == null) {
+            paidReaction = new TGReaction(this);
+            cachedReactions.put(key, paidReaction);
+          }
+          return paidReaction;
+        }
+      }
       case TdApi.ReactionTypeEmoji.CONSTRUCTOR: {
         TdApi.ReactionTypeEmoji emoji = (TdApi.ReactionTypeEmoji) reactionType;
         TdlibDataManager.Callback<TdlibEmojiReactionsManager.Entry> emojiReactionWatcher = (newEntry, inPlace) -> {
@@ -7287,6 +7307,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   private void resetOptions () {
     options = new TdlibOptions();
+    paidReaction = null;
+    ownedStarAmount = null;
     if (!StringUtils.isEmpty(applicationConfigJson)) {
       TdApi.JsonValue value = JSON.parse(applicationConfigJson);
       if (value != null) {
@@ -9584,7 +9606,16 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
   @TdlibThread
   private void updateOwnedStarCount (TdApi.UpdateOwnedStarCount update) {
-    // TODO(stars)
+    onStarAmountReceived(update.starAmount);
+  }
+
+  public void onStarAmountReceived (@Nullable TdApi.StarAmount starAmount) {
+    if (starAmount == null) {
+      return;
+    }
+    synchronized (dataLock) {
+      this.ownedStarAmount = starAmount;
+    }
   }
 
   @TdlibThread

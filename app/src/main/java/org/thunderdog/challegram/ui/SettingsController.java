@@ -114,7 +114,7 @@ public class SettingsController extends ViewController<Void> implements
   Menu, MoreDelegate, OptionDelegate,
   TdlibCache.MyUserDataChangeListener, ConnectionListener, StickersListener, MediaLayout.MediaGalleryCallback,
   ActivityResultHandler, View.OnLongClickListener, SessionListener, GlobalTokenStateListener, TdlibCache.UserDataChangeListener,
-  TdlibOptionListener {
+  TdlibOptionListener, Tdlib.OwnedStarCountListener {
 
   private final AvatarPickerManager avatarPickerManager;
   private ComplexHeaderView headerCell;
@@ -603,6 +603,9 @@ public class SettingsController extends ViewController<Void> implements
           }
         } else if (itemId == R.id.btn_phone) {
           view.setData(myPhone);
+        } else if (itemId == R.id.btn_starBalance) {
+          long starCount = tdlib.ownedStarCount();
+          view.setData(starCount >= 0 ? "⭐ " + Lang.formatNumber(starCount) : Lang.getString(R.string.LoadingInformation));
         } else if (itemId == R.id.btn_bio) {
           TdApi.FormattedText text;
           if (about == null) {
@@ -640,6 +643,8 @@ public class SettingsController extends ViewController<Void> implements
       items.add(new ListItem(ListItem.TYPE_SEPARATOR));
       items.add(newProfileAudioItem());
     }
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+    items.add(new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_starBalance, R.drawable.baseline_premium_star_24, R.string.StarBalance));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     items.add(new ListItem(ListItem.TYPE_INFO_MULTILINE, R.id.btn_bio, R.drawable.baseline_info_24, R.string.UserBio).setContentStrings(R.string.LoadingInformation, R.string.BioNone));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
@@ -766,6 +771,8 @@ public class SettingsController extends ViewController<Void> implements
     tdlib.listeners().subscribeToConnectivityUpdates(this);
     tdlib.listeners().subscribeToSessionUpdates(this);
     tdlib.listeners().addOptionsListener(this);
+    tdlib.addOwnedStarCountListener(this);
+    tdlib.requestOwnedStarCount();
     TGLegacyManager.instance().addEmojiListener(adapter);
     TdlibManager.instance().global().addTokenStateListener(this);
 
@@ -951,6 +958,15 @@ public class SettingsController extends ViewController<Void> implements
     return item;
   }
 
+  @Override
+  public void onOwnedStarCountChanged (Tdlib tdlib, long starCount) {
+    runOnUiThreadOptional(() -> {
+      if (adapter != null) {
+        adapter.updateValuedSettingById(R.id.btn_starBalance);
+      }
+    });
+  }
+
   private void checkBirthdate () {
     int position = adapter.indexOfViewById(R.id.btn_birthdate);
     boolean hadBirthdate = position != -1;
@@ -1023,6 +1039,7 @@ public class SettingsController extends ViewController<Void> implements
     tdlib.listeners().unsubscribeFromStickerUpdates(this);
     tdlib.listeners().unsubscribeFromSessionUpdates(this);
     tdlib.listeners().removeOptionListener(this);
+    tdlib.removeOwnedStarCountListener(this);
     TGLegacyManager.instance().removeEmojiListener(adapter);
     TdlibManager.instance().global().removeTokenStateListener(this);
     headerCell.performDestroy();

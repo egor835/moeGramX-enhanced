@@ -21,6 +21,7 @@ import org.thunderdog.challegram.ui.RecyclerViewController;
 import org.thunderdog.challegram.ui.SettingsAdapter;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.v.CustomRecyclerView;
+import org.thunderdog.challegram.widget.SliderWrapView;
 
 import java.util.ArrayList;
 
@@ -115,6 +116,8 @@ public class SettingsMoexController extends RecyclerViewController<SettingsMoexC
       showAutoPauseTypeOptions();
     } else if (viewId == R.id.btn_headerText) {
       showHeaderTextOptions();
+    } else if (viewId == R.id.btn_forumUnreadCounter) {
+      showForumUnreadCounterOptions();
     } else if (viewId == R.id.btn_pushService) {
       showPushServiceOptions();
     } else if (viewId == R.id.btn_disableReactions) {
@@ -159,6 +162,31 @@ public class SettingsMoexController extends RecyclerViewController<SettingsMoexC
       UI.copyText(String.join("\n", Lang.getStringSecure(R.string.MoexVer), U.getUsefulMetadata(tdlib)), R.string.CopiedText);
     }
     return false;
+  }
+
+  private static final int BUBBLE_RADIUS_STEP = 2;
+  // "Default" goes after the biggest radius
+  private static final int BUBBLE_RADIUS_DEFAULT_INDEX = MoexConfig.BUBBLE_RADIUS_MAX / BUBBLE_RADIUS_STEP + 1;
+
+  private static String[] bubbleRadiusValues () {
+    String[] values = new String[BUBBLE_RADIUS_DEFAULT_INDEX + 1];
+    for (int i = 0; i < BUBBLE_RADIUS_DEFAULT_INDEX; i++) {
+      values[i] = Integer.toString(bubbleRadiusForIndex(i));
+    }
+    values[BUBBLE_RADIUS_DEFAULT_INDEX] = Lang.getString(R.string.Default);
+    return values;
+  }
+
+  private static int bubbleRadiusForIndex (int index) {
+    return index == BUBBLE_RADIUS_DEFAULT_INDEX ? MoexConfig.BUBBLE_RADIUS_DEFAULT : index * BUBBLE_RADIUS_STEP;
+  }
+
+  private static int bubbleRadiusIndex () {
+    int radius = MoexConfig.bubbleRadius;
+    if (radius == MoexConfig.BUBBLE_RADIUS_DEFAULT) {
+      return BUBBLE_RADIUS_DEFAULT_INDEX;
+    }
+    return Math.round((float) Math.min(radius, MoexConfig.BUBBLE_RADIUS_MAX) / BUBBLE_RADIUS_STEP);
   }
 
   private void showChangeSizeLimit () {
@@ -279,6 +307,22 @@ public class SettingsMoexController extends RecyclerViewController<SettingsMoexC
     }));
   }
 
+  private void showForumUnreadCounterOptions () {
+    int mode = MoexConfig.forumUnreadCounter;
+    showSettings(new SettingsWrapBuilder(R.id.btn_forumUnreadCounter).setRawItems(new ListItem[] {
+      new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_forumUnreadCounterMessages, 0, R.string.ForumUnreadCounterMessages, R.id.btn_forumUnreadCounter, mode == MoexConfig.FORUM_UNREAD_COUNTER_MESSAGES),
+      new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_forumUnreadCounterTopics, 0, R.string.ForumUnreadCounterTopics, R.id.btn_forumUnreadCounter, mode == MoexConfig.FORUM_UNREAD_COUNTER_TOPICS),
+    }).setAllowResize(false).setIntDelegate((id, result) -> {
+      int newMode = result.get(R.id.btn_forumUnreadCounter) == R.id.btn_forumUnreadCounterTopics ?
+        MoexConfig.FORUM_UNREAD_COUNTER_TOPICS : MoexConfig.FORUM_UNREAD_COUNTER_MESSAGES;
+      if (newMode != MoexConfig.forumUnreadCounter) {
+        MoexConfig.instance().setForumUnreadCounter(newMode);
+        tdlib.topics().notifyForumUnreadCountersChanged();
+      }
+      adapter.updateValuedSettingById(R.id.btn_forumUnreadCounter);
+    }));
+  }
+
   private void showAutoPauseTypeOptions () {
     int flags = MoexConfig.instance().getAutoPauseMediaTypes();
     showSettings(new SettingsWrapBuilder(R.id.btn_autoPauseMedia).setRawItems(new ListItem[] {
@@ -325,6 +369,13 @@ public class SettingsMoexController extends RecyclerViewController<SettingsMoexC
   @Override
   protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
     adapter = new SettingsAdapter(this) {
+      @Override
+      protected void onSliderValueChanged (ListItem item, SliderWrapView view, int newValue, int oldValue) {
+        if (item.getId() == R.id.btn_bubbleRadius) {
+          MoexConfig.instance().setBubbleRadius(bubbleRadiusForIndex(newValue));
+        }
+      }
+
       @Override
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
         view.setDrawModifier(item.getDrawModifier());
@@ -413,6 +464,9 @@ public class SettingsMoexController extends RecyclerViewController<SettingsMoexC
           }
         } else if (itemId == R.id.btn_disableReactions) {
           view.getToggler().setRadioEnabled(MoexConfig.disableReactions, isUpdate);
+        } else if (itemId == R.id.btn_forumUnreadCounter) {
+          view.setData(MoexConfig.forumUnreadCounter == MoexConfig.FORUM_UNREAD_COUNTER_TOPICS ?
+            R.string.ForumUnreadCounterTopics : R.string.ForumUnreadCounterMessages);
         } else if (itemId == R.id.btn_hideMessagePanelButtons) {
           StringBuilder b = new StringBuilder();
           String separator = Lang.getConcatSeparator();
@@ -514,7 +568,12 @@ public class SettingsMoexController extends RecyclerViewController<SettingsMoexC
         items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_squareAvatar, 0, R.string.SquareAvatar));
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
         items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_disableReactions, 0, R.string.DisableReactions));
+        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_forumUnreadCounter, 0, R.string.ForumUnreadCounter));
+        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+        items.add(new ListItem(ListItem.TYPE_SLIDER, R.id.btn_bubbleRadius, 0, R.string.BubbleRadius, false).setSliderInfo(bubbleRadiusValues(), bubbleRadiusIndex()));
         items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+        items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.BubbleRadiusInfo));
 
         items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.MoexHideButtons));
         items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));

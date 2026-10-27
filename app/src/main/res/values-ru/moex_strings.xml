@@ -118,4 +118,10 @@
   <string name="PushServiceDescription">В автоматическом режиме используется Firebase, если есть Google Play Services, иначе UnifiedPush.</string>
   <string name="PushServiceNoGooglePlayServices">На этом устройстве нет Google Play Services</string>
   <string name="PushServiceNoDistributor">Не установлен дистрибьютор UnifiedPush. Установите ntfy или другое приложение-дистрибьютор.</string>
+  <string name="BubbleRadius">Скругление сообщений</string>
+  <string name="BubbleRadiusInfo">Радиус скругления углов пузырей сообщений. «По умолчанию» — значение из текущей темы.</string>
+  <string name="ForumUnreadCounter">Счётчик форумов</string>
+  <string name="ForumUnreadCounterMessages">Непрочитанные сообщения</string>
+  <string name="ForumUnreadCounterTopics">Топики с непрочитанными</string>
+  <string name="StarBalance">Звёзды Telegram</string>
 </resources>

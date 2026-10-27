@@ -395,8 +395,20 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
       unreadCount -= markedAsUnreadCount;
       return unreadCount > 0 ? unreadCount : markedAsUnreadCount > 0 ? Tdlib.CHAT_MARKED_AS_UNREAD : 0;
     } else {
-      return chat.unreadCount > 0 ? chat.unreadCount : chat.isMarkedAsUnread ? Tdlib.CHAT_MARKED_AS_UNREAD : 0;
+      return getChatUnreadCount();
     }
+  }
+
+  private int getChatUnreadCount () {
+    int unreadCount = chat.unreadCount;
+    if (unreadCount > 0 && chat.viewAsTopics) {
+      // Server counter of forums isn't updated when messages are read in topics
+      int forumUnreadCount = tdlib.topics().getForumUnreadCount(chat.id);
+      if (forumUnreadCount != -1) {
+        unreadCount = forumUnreadCount;
+      }
+    }
+    return unreadCount > 0 ? unreadCount : chat.isMarkedAsUnread ? Tdlib.CHAT_MARKED_AS_UNREAD : 0;
   }
 
   public long getPrivateId () {
@@ -832,7 +844,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, ContentPreview.R
     } else if (getSource() != null) {
       return 0;
     } else {
-      return chat.unreadCount > 0 ? chat.unreadCount : chat.isMarkedAsUnread ? Tdlib.CHAT_MARKED_AS_UNREAD : 0;
+      return getChatUnreadCount();
     }
   }
 

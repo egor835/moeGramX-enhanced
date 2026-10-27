@@ -142,4 +142,10 @@
   <string name="PushServiceDescription">Automatic mode uses Firebase when Google Play Services are available, and UnifiedPush otherwise.</string>
   <string name="PushServiceNoGooglePlayServices">Google Play Services are unavailable on this device</string>
   <string name="PushServiceNoDistributor">No UnifiedPush distributor installed. Install ntfy or another distributor app.</string>
+  <string name="BubbleRadius">Message corners</string>
+  <string name="BubbleRadiusInfo">Corner radius of message bubbles. "Default" uses the value from the current theme.</string>
+  <string name="ForumUnreadCounter">Forum unread counter</string>
+  <string name="ForumUnreadCounterMessages">Unread messages</string>
+  <string name="ForumUnreadCounterTopics">Unread topics</string>
+  <string name="StarBalance">Telegram Stars</string>
 </resources>

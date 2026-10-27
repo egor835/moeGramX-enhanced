@@ -93,4 +93,9 @@
   <item name="btn_pushServiceAuto" type="id" />
   <item name="btn_pushServiceFirebase" type="id" />
   <item name="btn_pushServiceUnifiedPush" type="id" />
+  <item name="btn_bubbleRadius" type="id" />
+  <item name="btn_forumUnreadCounter" type="id" />
+  <item name="btn_forumUnreadCounterMessages" type="id" />
+  <item name="btn_forumUnreadCounterTopics" type="id" />
+  <item name="btn_starBalance" type="id" />
 </resources>

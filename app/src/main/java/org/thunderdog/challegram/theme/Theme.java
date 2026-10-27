@@ -56,6 +56,7 @@ import java.util.ArrayList;
 import me.vkryl.android.ViewUtils;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
+import moe.kirao.mgx.MoexConfig;
 
 public class Theme {
   public static final int EXPORT_FLAG_INCLUDE_DEFAULT_VALUES = 1;
@@ -941,15 +942,24 @@ public class Theme {
   private static final boolean BUBBLE_BIG_RADIUS_AVAILABLE = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT;
 
   public static float getBubbleDefaultRadius () {
+    if (BUBBLE_BIG_RADIUS_AVAILABLE && MoexConfig.bubbleRadius != MoexConfig.BUBBLE_RADIUS_DEFAULT) {
+      return MoexConfig.bubbleRadius;
+    }
     return Theme.getProperty(BUBBLE_BIG_RADIUS_AVAILABLE ? PropertyId.BUBBLE_CORNER : PropertyId.BUBBLE_CORNER_LEGACY);
   }
 
   public static float getBubbleMergeRadius () {
-    return Theme.getProperty(BUBBLE_BIG_RADIUS_AVAILABLE ? PropertyId.BUBBLE_CORNER_MERGED : PropertyId.BUBBLE_CORNER_LEGACY);
+    float radius = Theme.getProperty(BUBBLE_BIG_RADIUS_AVAILABLE ? PropertyId.BUBBLE_CORNER_MERGED : PropertyId.BUBBLE_CORNER_LEGACY);
+    if (BUBBLE_BIG_RADIUS_AVAILABLE && MoexConfig.bubbleRadius != MoexConfig.BUBBLE_RADIUS_DEFAULT) {
+      // Merged corners must not be rounder than the outer ones
+      return Math.min(radius, MoexConfig.bubbleRadius);
+    }
+    return radius;
   }
 
   public static boolean isBubbleRadiusBig (float radius) {
-    return BUBBLE_BIG_RADIUS_AVAILABLE && radius == Screen.dp(18f);
+    // Custom radius may be anything, so the closest shadow is picked
+    return BUBBLE_BIG_RADIUS_AVAILABLE && radius >= Screen.dp(12f);
   }
 
   public static int subtitleColor (int color) {

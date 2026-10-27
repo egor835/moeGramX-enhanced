@@ -58,6 +58,14 @@ public class MoexConfig {
   public static final String KEY_AUTO_PAUSE_MEDIA_TYPES = "auto_pause_media_types";
   public static final String KEY_AUTO_PAUSE_RESUME = "auto_pause_resume_system_playback";
   public static final String KEY_PUSH_SERVICE = "push_service";
+  public static final String KEY_BUBBLE_RADIUS = "bubble_radius";
+  public static final String KEY_FORUM_UNREAD_COUNTER = "forum_unread_counter";
+
+  public static final int FORUM_UNREAD_COUNTER_MESSAGES = 0;
+  public static final int FORUM_UNREAD_COUNTER_TOPICS = 1;
+
+  public static final int BUBBLE_RADIUS_DEFAULT = -1;
+  public static final int BUBBLE_RADIUS_MAX = 24;
 
   public static final int START_WITH_FRONT = 0;
   public static final int START_WITH_REAR = 1;
@@ -103,6 +111,8 @@ public class MoexConfig {
   public static boolean quickFeatured = instance().getBoolean(KEY_CHAT_QUICK_FEATURED, false);
   public static boolean disableProxyOnVpn = instance().getBoolean(KEY_DISABLE_PROXY_ON_VPN, false);
   public static boolean autoPauseResumeSystemPlayback = instance().getBoolean(KEY_AUTO_PAUSE_RESUME, false);
+  public static int bubbleRadius = instance().getInt(KEY_BUBBLE_RADIUS, BUBBLE_RADIUS_DEFAULT);
+  public static int forumUnreadCounter = instance().getInt(KEY_FORUM_UNREAD_COUNTER, FORUM_UNREAD_COUNTER_MESSAGES);
 
   private MoexConfig () {
     File configDir = new File(UI.getAppContext().getFilesDir(), "moexconf");
@@ -421,5 +431,33 @@ public class MoexConfig {
   public void setAutoPauseResumeSystemPlayback (boolean value) {
     autoPauseResumeSystemPlayback = value;
     putBoolean(KEY_AUTO_PAUSE_RESUME, value);
+  }
+
+  public void setBubbleRadius (int radius) {
+    int oldRadius = bubbleRadius;
+    if (oldRadius == radius) {
+      return;
+    }
+    bubbleRadius = radius;
+    if (radius == BUBBLE_RADIUS_DEFAULT) {
+      remove(KEY_BUBBLE_RADIUS);
+    } else {
+      putInt(KEY_BUBBLE_RADIUS, radius);
+    }
+    notifyClientListeners(KEY_BUBBLE_RADIUS, radius, oldRadius);
+  }
+
+  public void setForumUnreadCounter (int mode) {
+    int oldMode = forumUnreadCounter;
+    if (oldMode == mode) {
+      return;
+    }
+    forumUnreadCounter = mode;
+    if (mode == FORUM_UNREAD_COUNTER_MESSAGES) {
+      remove(KEY_FORUM_UNREAD_COUNTER);
+    } else {
+      putInt(KEY_FORUM_UNREAD_COUNTER, mode);
+    }
+    notifyClientListeners(KEY_FORUM_UNREAD_COUNTER, mode, oldMode);
   }
 }

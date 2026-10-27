@@ -131,6 +131,7 @@ import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.lambda.RunnableInt;
 import me.vkryl.core.lambda.RunnableLong;
+import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.util.ConditionalExecutor;
 import tgx.app.RecaptchaProviderRegistry;
 import tgx.td.ChatId;
@@ -7560,6 +7561,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
 
     listeners.updateNewMessage(update);
 
+    topics.onNewMessage(update.message);
+
     notificationManager.onUpdateNewMessage(update);
 
     context.global().notifyUpdateNewMessage(this, update);
@@ -8372,7 +8375,27 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       chat.unreadCount = update.unreadCount;
       chatLists = chatListsImpl(chat.positions);
     }
+    topics.onChatReadInbox(update.chatId, update.unreadCount);
     listeners.updateChatReadInbox(update, availabilityChanged, chat, chatLists);
+  }
+
+  /**
+   * Makes chat list redraw unread counter of the chat, e.g. when forum counter calculated from topics changes.
+   */
+  @TdlibThread
+  void notifyChatReadInboxChanged (long chatId) {
+    final TdApi.Chat chat;
+    final TdApi.UpdateChatReadInbox update;
+    final TdlibChatList[] chatLists;
+    synchronized (dataLock) {
+      chat = chats.get(chatId);
+      if (chat == null) {
+        return;
+      }
+      update = new TdApi.UpdateChatReadInbox(chatId, chat.lastReadInboxMessageId, chat.unreadCount);
+      chatLists = chatListsImpl(chat.positions);
+    }
+    listeners.updateChatReadInbox(update, false, chat, chatLists);
   }
 
   @TdlibThread
@@ -9622,6 +9645,38 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     synchronized (dataLock) {
       this.ownedStarAmount = starAmount;
     }
+    for (OwnedStarCountListener listener : ownedStarCountListeners) {
+      listener.onOwnedStarCountChanged(this, starAmount.starCount);
+    }
+  }
+
+  public interface OwnedStarCountListener {
+    @AnyThread
+    void onOwnedStarCountChanged (Tdlib tdlib, long starCount);
+  }
+
+  private final ReferenceList<OwnedStarCountListener> ownedStarCountListeners = new ReferenceList<>(true);
+
+  public void addOwnedStarCountListener (OwnedStarCountListener listener) {
+    ownedStarCountListeners.add(listener);
+  }
+
+  public void removeOwnedStarCountListener (OwnedStarCountListener listener) {
+    ownedStarCountListeners.remove(listener);
+  }
+
+  /**
+   * Requests the balance in case it wasn't received through updateOwnedStarCount yet.
+   */
+  public void requestOwnedStarCount () {
+    if (ownedStarCount() >= 0) {
+      return;
+    }
+    send(new TdApi.GetStarTransactions(new TdApi.MessageSenderUser(myUserId()), null, null, null, 1), (transactions, error) -> {
+      if (transactions != null) {
+        onStarAmountReceived(transactions.starAmount);
+      }
+    });
   }
 
   @TdlibThread

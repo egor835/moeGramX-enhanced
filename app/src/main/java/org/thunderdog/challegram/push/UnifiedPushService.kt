@@ -13,7 +13,7 @@ package org.thunderdog.challegram.push
 
 import org.drinkless.tdlib.TdApi.DeviceTokenSimplePush
 import org.thunderdog.challegram.service.PushProcessor
-import org.thunderdog.challegram.tool.UI
+import org.thunderdog.challegram.unsorted.AppContext
 import org.thunderdog.challegram.unsorted.Settings
 import org.unifiedpush.android.connector.FailedReason
 import org.unifiedpush.android.connector.PushService
@@ -23,7 +23,7 @@ import tgx.bridge.PushManagerBridge
 
 class UnifiedPushService : PushService() {
   override fun onNewEndpoint(endpoint: PushEndpoint, instance: String) {
-    UI.initApp(applicationContext)
+    AppContext.init(applicationContext)
     PushManagerBridge.log("UnifiedPush: new endpoint: %s", endpoint.url)
     if (!UnifiedPushTokenRetriever.onEndpointReceived(endpoint.url)) {
       // Endpoint was changed by the distributor
@@ -32,7 +32,7 @@ class UnifiedPushService : PushService() {
   }
 
   override fun onMessage(message: PushMessage, instance: String) {
-    UI.initApp(applicationContext)
+    AppContext.init(applicationContext)
     val pushId = Settings.instance().newPushId()
     val receivedTime = System.currentTimeMillis()
     PushManagerBridge.log("UnifiedPush: message received, size: %d", message.content.size)

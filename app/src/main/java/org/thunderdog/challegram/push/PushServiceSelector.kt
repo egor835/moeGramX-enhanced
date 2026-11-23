@@ -19,7 +19,7 @@ import com.google.firebase.messaging.FirebaseMessaging
 import moe.kirao.mgx.MoexConfig
 import org.thunderdog.challegram.BuildConfig
 import org.thunderdog.challegram.telegram.TdlibManager
-import org.thunderdog.challegram.telegram.TdlibNotificationUtils
+import org.thunderdog.challegram.unsorted.DeviceTokenRetrieverInstance
 import org.thunderdog.challegram.unsorted.Settings
 import org.unifiedpush.android.connector.UnifiedPush
 import tgx.bridge.DeviceTokenRetriever
@@ -95,9 +95,9 @@ object PushServiceSelector {
    */
   @JvmStatic
   fun onPushServiceChanged(application: Application) {
-    val oldRetriever = TdlibNotificationUtils.getDeviceTokenRetriever()
-    TdlibNotificationUtils.resetDeviceTokenRetriever()
-    val newRetriever = TdlibNotificationUtils.getDeviceTokenRetriever()
+    val oldRetriever = DeviceTokenRetrieverInstance.get()
+    DeviceTokenRetrieverInstance.reset()
+    val newRetriever = DeviceTokenRetrieverInstance.get()
     PushManagerBridge.log("Push service changed: %s -> %s", oldRetriever.name, newRetriever.name)
     if (oldRetriever.name == newRetriever.name) {
       return
@@ -127,7 +127,7 @@ object PushServiceSelector {
    */
   @JvmStatic
   fun onTokenRetrievalFailed(application: Application, errorKey: String): Boolean {
-    val retriever = TdlibNotificationUtils.getDeviceTokenRetriever()
+    val retriever = DeviceTokenRetrieverInstance.get()
     if (retriever is FirebaseDeviceTokenRetriever &&
       MoexConfig.instance().pushService == MoexConfig.PUSH_SERVICE_AUTO &&
       !firebaseFailed &&
@@ -145,5 +145,5 @@ object PushServiceSelector {
 
   @JvmStatic
   fun currentServiceName(): String =
-    TdlibNotificationUtils.getDeviceTokenRetriever().name
+    DeviceTokenRetrieverInstance.get().name
 }

@@ -78,6 +78,8 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.TGCountry;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.EditRightsController;
+import org.thunderdog.challegram.unsorted.AppContext;
+import org.thunderdog.challegram.unsorted.DeviceTokenRetrieverInstance;
 import org.thunderdog.challegram.unsorted.Passcode;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.ChangeLogList;
@@ -4859,7 +4861,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case TdApi.MessageAnimation.CONSTRUCTOR:
         return !photoVideoOnly;
       default:
-        Td.assertMessageContent_af730a78();
+        Td.assertMessageContent_f7758f8b();
         break;
     }
 
@@ -4900,7 +4902,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       emoji().findOrRequest(customEmojiId, (entry, inPlace) -> {
         if (entry != null && !entry.isNotFound()) {
           TdApi.Sticker customEmojiSticker = entry.value;
-          TdApi.MessageAnimatedEmoji animatedEmoji = new TdApi.MessageAnimatedEmoji(new TdApi.AnimatedEmoji(customEmojiSticker, customEmojiSticker.width, customEmojiSticker.height, 0, null), content.text.text);
+          TdApi.MessageAnimatedEmoji animatedEmoji = new TdApi.MessageAnimatedEmoji(new TdApi.AnimatedEmoji(customEmojiSticker, customEmojiSticker.width, customEmojiSticker.height, 0, null, false), content.text.text);
           performEdit(chatId, messageId, animatedEmoji, new TdApi.EditMessageText(chatId, messageId, null, content), pendingMessageTexts);
         } else {
           animatedEmojiFallback.run();
@@ -4943,7 +4945,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
           return Td.textOrCaption(messageText);
       }
-      Td.assertMessageContent_af730a78();
+      Td.assertMessageContent_f7758f8b();
       throw Td.unsupported(messageText);
     }
     MessageEditMediaPending pendingEditMedia = getPendingMessageMedia(chatId, messageId);
@@ -5077,6 +5079,16 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       return false;
     return supergroupId == 1084287520 || supergroupId == 1266791237 ||
       supergroupId == 1492016544 || supergroupId == 1227585106 || supergroupId == 1116030833;
+  }
+
+  public boolean isDeveloper () {
+    if (BuildConfig.DEBUG) {
+      return true;
+    }
+    long myUserId = myUserId();
+    return
+      myUserId == TGX_CREATOR_USER_ID ||
+      myUserId == TDLIB_CREATOR_USER_ID;
   }
 
   public void getTesterLevel (@NonNull RunnableInt callback) {
@@ -6045,7 +6057,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       if (deviceToken != null && (state == TdlibManager.TokenState.NONE || state == TdlibManager.TokenState.INITIALIZING)) {
         state = TdlibManager.TokenState.OK;
       }
-      String tokenProvider = TdlibNotificationUtils.getDeviceTokenRetriever().name;
+      String tokenProvider = DeviceTokenRetrieverInstance.get().name;
       String error = context().getTokenError();
       switch (state) {
         case TdlibManager.TokenState.ERROR: {
@@ -6091,7 +6103,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       }
     }
     final long timeZoneOffset = timeZoneOffset();
-    final Context context = UI.getAppContext();
+    final Context context = AppContext.get();
     params.put("package_id", context.getPackageName());
     String installerName = AppInstallationUtil.getInstallerPackageName(context);
     if (!StringUtils.isEmpty(installerName)) {
@@ -6187,7 +6199,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       updateNotificationParameters(client);
       client.send(new TdApi.SetOption("storage_max_files_size", new TdApi.OptionValueInteger(Integer.MAX_VALUE)), okHandler);
       client.send(new TdApi.SetOption("ignore_default_disable_notification", new TdApi.OptionValueBoolean(true)), okHandler);
-      client.send(new TdApi.SetOption("ignore_platform_restrictions", new TdApi.OptionValueBoolean(AppInstallationUtil.isAppSideLoaded(UI.getAppContext()))), okHandler);
+      client.send(new TdApi.SetOption("ignore_platform_restrictions", new TdApi.OptionValueBoolean(AppInstallationUtil.isAppSideLoaded(AppContext.get()))), okHandler);
       client.send(new TdApi.SetOption("process_pinned_messages_as_mentions", new TdApi.OptionValueBoolean(true)), okHandler);
     }
     checkConnectionParams(client, true);
@@ -6822,7 +6834,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
   }
 
   public boolean youtubePipEnabled () {
-    return !options.youtubePipDisabled || AppInstallationUtil.isAppSideLoaded(UI.getAppContext());
+    if (!options.youtubePipDisabled) return true;
+    return AppInstallationUtil.isAppSideLoaded(AppContext.get());
   }
 
   public List<RtcServer> rtcServers () {
@@ -7642,7 +7655,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         break;
       }
       default: {
-        Td.assertMessageContent_af730a78();
+        Td.assertMessageContent_f7758f8b();
         break;
       }
     }
@@ -9281,7 +9294,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
     long projectId = 0;
     try {
-      FirebaseOptions options = FirebaseOptions.fromResource(UI.getAppContext());
+      FirebaseOptions options = FirebaseOptions.fromResource(AppContext.get());
       String projectIdRaw = options != null ? options.getGcmSenderId() : "";
       if (!StringUtils.isEmpty(projectIdRaw)) {
         projectId = Long.parseLong(projectIdRaw);
@@ -9297,7 +9310,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         .setNonce(nonce)
         .setCloudProjectNumber(projectId)
         .build();
-      IntegrityManager integrityManager = IntegrityManagerFactory.create(UI.getAppContext());
+      IntegrityManager integrityManager = IntegrityManagerFactory.create(AppContext.get());
       Task<IntegrityTokenResponse> integrityTokenResponse = integrityManager.requestIntegrityToken(request);
       integrityTokenResponse
         .addOnSuccessListener(r -> {
@@ -10646,6 +10659,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
       case TdApi.UpdateStakeDiceState.CONSTRUCTOR:
       case TdApi.UpdateNewOauthRequest.CONSTRUCTOR:
       case TdApi.UpdateTextCompositionStyles.CONSTRUCTOR:
+      case TdApi.UpdateAllowedBotUsernamePremiumSuffixes.CONSTRUCTOR:
+      case TdApi.UpdateTonWalletGaslessTransfersInfo.CONSTRUCTOR:
+      case TdApi.UpdateTonWalletState.CONSTRUCTOR:
+      case TdApi.UpdateTonWalletTonConnectSession.CONSTRUCTOR:
+      case TdApi.UpdateTonWalletTonConnectSessionDisconnectRequired.CONSTRUCTOR:
         break;
 
       // for bots only.
@@ -10677,7 +10695,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         throw Td.unsupported(update);
       }
       default: {
-        Td.assertUpdate_a21b1e40();
+        Td.assertUpdate_c11d0a6d();
         throw Td.unsupported(update);
       }
     }
@@ -11012,7 +11030,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
     }
     final String hashtag;
     if (!BuildConfig.LATEST_FLAVOR) {
-      hashtag = abiFlavor + StringUtils.ucfirst(BuildConfig.FLAVOR_SDK);
+      hashtag = abiFlavor + StringUtils.ucfirst(BuildConfig.FLAVOR);
     } else {
       hashtag = abiFlavor;
     }
@@ -11702,11 +11720,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.MessagePollOptionDeleted.CONSTRUCTOR:
         case TdApi.MessageChatAddedToCommunity.CONSTRUCTOR:
         case TdApi.MessageChatRemovedFromCommunity.CONSTRUCTOR:
+        case TdApi.MessageTonConnectRequest.CONSTRUCTOR:
+        case TdApi.MessageTonWalletTransfer.CONSTRUCTOR:
           // None of these messages ever passed to this method,
           // assuming we want to check RightId.SEND_BASIC_MESSAGES
           return getBasicMessageRestrictionText(chat);
         default:
-          Td.assertMessageContent_af730a78();
+          Td.assertMessageContent_f7758f8b();
           throw Td.unsupported(message.content);
       }
     }
@@ -12128,7 +12148,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         return true;
       }
       default: {
-        Td.assertSuggestedAction_a78df4c9();
+        Td.assertSuggestedAction_17e8d183();
         break;
       }
     }
@@ -12225,7 +12245,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener, Da
         case TdApi.SuggestedActionSetLoginEmailAddress.CONSTRUCTOR:
           return ResolvableProblem.SET_LOGIN_EMAIL;
         default:
-          Td.assertSuggestedAction_a78df4c9();
+          Td.assertSuggestedAction_17e8d183();
           throw Td.unsupported(singleAction);
       }
     }

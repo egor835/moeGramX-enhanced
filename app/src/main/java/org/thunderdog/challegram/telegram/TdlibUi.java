@@ -624,7 +624,8 @@ public class TdlibUi extends Handler {
             }
           })
           .setSaveStr(R.string.Delete)
-          .setSaveColorId(ColorId.textNegative))
+          .setSaveColorId(ColorId.textNegative)
+          .setAllowResize(false))
       );
     });
   }
@@ -4199,7 +4200,9 @@ public class TdlibUi extends Handler {
       case TdApi.InternalLinkTypeSavedMessages.CONSTRUCTOR:
       case TdApi.InternalLinkTypeSearch.CONSTRUCTOR:
       case TdApi.InternalLinkTypeStarPurchase.CONSTRUCTOR:
-      case TdApi.InternalLinkTypeTextCompositionStyle.CONSTRUCTOR: {
+      case TdApi.InternalLinkTypeTextCompositionStyle.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeTonConnect.CONSTRUCTOR:
+      case TdApi.InternalLinkTypeTonWalletTransfer.CONSTRUCTOR: {
         unsupported.run();
         break;
       }
@@ -4319,7 +4322,7 @@ public class TdlibUi extends Handler {
         return; // async
       }
       default: {
-        Td.assertInternalLinkType_44babac4();
+        Td.assertInternalLinkType_c232a5d5();
         throw Td.unsupported(linkType);
       }
     }
@@ -7326,6 +7329,10 @@ public class TdlibUi extends Handler {
           break;
       }
     });
+  }
+
+  public void openTonAddress (TdlibDelegate context, String tonAddress) {
+    // TODO
   }
 
   public List<HapticMenuHelper.MenuItem> fillDefaultHapticMenu (long chatId, boolean isEdit, boolean canToggleMarkdown, boolean canSendWithoutSound) {

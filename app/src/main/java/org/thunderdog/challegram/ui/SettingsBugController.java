@@ -48,7 +48,6 @@ import org.thunderdog.challegram.telegram.GlobalTokenStateListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibManager;
-import org.thunderdog.challegram.telegram.TdlibNotificationUtils;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.PorterDuffColorId;
@@ -57,6 +56,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.camera.CameraController;
+import org.thunderdog.challegram.unsorted.DeviceTokenRetrieverInstance;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Test;
 import org.thunderdog.challegram.util.AppUpdater;
@@ -521,7 +521,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
               break;
           }
         } else if (itemId == R.id.btn_secret_pushConfig) {
-          String configuration = TdlibNotificationUtils.getDeviceTokenRetriever().getConfiguration();
+          String configuration = DeviceTokenRetrieverInstance.get().getConfiguration();
           view.setData(!StringUtils.isEmpty(configuration) ? configuration : "Unavailable");
         } else if (itemId == R.id.btn_secret_appFingerprint) {
           view.setData(U.getApkFingerprint("SHA1"));
@@ -1191,7 +1191,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         UI.copyText(toHumanRepresentation(tdlib.context().getToken()), R.string.CopiedText);
       }
     } else if (viewId == R.id.btn_secret_pushConfig) {
-      String configuration = TdlibNotificationUtils.getDeviceTokenRetriever().getConfiguration();
+      String configuration = DeviceTokenRetrieverInstance.get().getConfiguration();
       if (!StringUtils.isEmpty(configuration)) {
         UI.copyText(configuration, R.string.CopiedText);
       }

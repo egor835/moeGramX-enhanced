@@ -20,11 +20,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.MainScope
 import org.thunderdog.challegram.push.PushServiceSelector
 import org.thunderdog.challegram.service.PushHandler
-import org.thunderdog.challegram.telegram.TdlibNotificationUtils
-import org.thunderdog.challegram.tool.UI
-import tgx.bridge.DeviceTokenRetriever
-import tgx.bridge.DeviceTokenRetrieverFactory
-import tgx.bridge.PushManagerBridge
+import org.thunderdog.challegram.unsorted.AppContext
+import org.thunderdog.challegram.unsorted.DeviceTokenRetrieverInstance
+import tgx.bridge.*
 import tgx.flavor.TgxApplication
 
 class BaseApplication : TgxApplication(), Configuration.Provider {
@@ -39,16 +37,19 @@ class BaseApplication : TgxApplication(), Configuration.Provider {
     PushManagerBridge.initialize(
       scope,
 
-      PushHandler(),
+      object : PushManagerFactory {
+        override fun onCreatePushManager(): PushManager =
+          PushHandler()
+      },
       object : DeviceTokenRetrieverFactory {
         override fun onCreateNewTokenRetriever(context: Context): DeviceTokenRetriever =
           PushServiceSelector.createTokenRetriever(context)
       }
     )
 
-    UI.initApp(applicationContext)
+    AppContext.init(applicationContext)
 
-    PushServiceSelector.configure(this, TdlibNotificationUtils.getDeviceTokenRetriever())
+    PushServiceSelector.configure(this, DeviceTokenRetrieverInstance.get())
   }
 
   override val workManagerConfiguration: Configuration

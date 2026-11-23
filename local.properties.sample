@@ -6,8 +6,8 @@
 # header note.
 # Path to Android SDK
 sdk.dir=
-telegram.api_id=
-telegram.api_hash=
+telegram.api_id=94575
+telegram.api_hash=a3406de8d171bb422bb6ddf3bbd800e2
 org.gradle.workers.max=12
 keystore.file=/home/cunny/StudioProjects/keys/tgx-keystore.properties
 app.id=moe.cnuuyy.mgx
